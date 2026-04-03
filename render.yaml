@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: todo-app
+    runtime: node
+    plan: free
+    buildCommand: npm install && cd server && npm install && npm run build && cd ../client && npm install && npm run build
+    startCommand: cd server && node dist/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: DB_PATH
+        value: /var/data/todo.db
+    disk:
+      name: todo-data
+      mountPath: /var/data
+      sizeGB: 1
