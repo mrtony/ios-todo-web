@@ -4,6 +4,7 @@ import api from '@/lib/api';
 interface Task {
   id: string;
   list_id: string;
+  title: string;
   completed_at: string | null;
   flagged: number;
   due_date: string | null;
