@@ -8,45 +8,45 @@ const router = Router();
 
 router.use(requireAuth);
 
-router.get('/', (req, res, next) => {
+router.get('/', async (req, res, next) => {
   try {
-    const lists = listService.getAll(req.userId!);
+    const lists = await listService.getAll(req.userId!);
     res.json(lists);
   } catch (err) {
     next(err);
   }
 });
 
-router.post('/', validate(createListSchema), (req, res, next) => {
+router.post('/', validate(createListSchema), async (req, res, next) => {
   try {
-    const list = listService.create(req.userId!, req.body);
+    const list = await listService.create(req.userId!, req.body);
     res.status(201).json(list);
   } catch (err) {
     next(err);
   }
 });
 
-router.patch('/reorder', validate(reorderListsSchema), (req, res, next) => {
+router.patch('/reorder', validate(reorderListsSchema), async (req, res, next) => {
   try {
-    listService.reorder(req.userId!, req.body.orderedIds);
+    await listService.reorder(req.userId!, req.body.orderedIds);
     res.json({ success: true });
   } catch (err) {
     next(err);
   }
 });
 
-router.patch('/:id', validate(updateListSchema), (req, res, next) => {
+router.patch('/:id', validate(updateListSchema), async (req, res, next) => {
   try {
-    const list = listService.update(req.userId!, String(req.params.id), req.body);
+    const list = await listService.update(req.userId!, String(req.params.id), req.body);
     res.json(list);
   } catch (err) {
     next(err);
   }
 });
 
-router.delete('/:id', (req, res, next) => {
+router.delete('/:id', async (req, res, next) => {
   try {
-    listService.remove(req.userId!, String(req.params.id));
+    await listService.remove(req.userId!, String(req.params.id));
     res.status(204).send();
   } catch (err) {
     next(err);

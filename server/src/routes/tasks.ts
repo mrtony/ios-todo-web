@@ -8,90 +8,90 @@ const router = Router();
 
 router.use(requireAuth);
 
-router.get('/tasks/all', (req, res, next) => {
+router.get('/tasks/all', async (req, res, next) => {
   try {
-    const tasks = taskService.getAllForUser(req.userId!);
+    const tasks = await taskService.getAllForUser(req.userId!);
     res.json(tasks);
   } catch (err) {
     next(err);
   }
 });
 
-router.get('/lists/:listId/tasks', (req, res, next) => {
+router.get('/lists/:listId/tasks', async (req, res, next) => {
   try {
-    const result = taskService.getByListWithSubtasks(req.userId!, String(req.params.listId));
+    const result = await taskService.getByListWithSubtasks(req.userId!, String(req.params.listId));
     res.json(result);
   } catch (err) {
     next(err);
   }
 });
 
-router.post('/lists/:listId/tasks', validate(createTaskSchema), (req, res, next) => {
+router.post('/lists/:listId/tasks', validate(createTaskSchema), async (req, res, next) => {
   try {
-    const task = taskService.create(req.userId!, String(req.params.listId), req.body);
+    const task = await taskService.create(req.userId!, String(req.params.listId), req.body);
     res.status(201).json(task);
   } catch (err) {
     next(err);
   }
 });
 
-router.patch('/lists/:listId/tasks/reorder', validate(reorderTasksSchema), (req, res, next) => {
+router.patch('/lists/:listId/tasks/reorder', validate(reorderTasksSchema), async (req, res, next) => {
   try {
-    taskService.reorder(req.userId!, String(req.params.listId), req.body.orderedIds);
+    await taskService.reorder(req.userId!, String(req.params.listId), req.body.orderedIds);
     res.json({ success: true });
   } catch (err) {
     next(err);
   }
 });
 
-router.patch('/tasks/:id', validate(updateTaskSchema), (req, res, next) => {
+router.patch('/tasks/:id', validate(updateTaskSchema), async (req, res, next) => {
   try {
-    const task = taskService.update(req.userId!, String(req.params.id), req.body);
+    const task = await taskService.update(req.userId!, String(req.params.id), req.body);
     res.json(task);
   } catch (err) {
     next(err);
   }
 });
 
-router.delete('/tasks/:id', (req, res, next) => {
+router.delete('/tasks/:id', async (req, res, next) => {
   try {
-    taskService.remove(req.userId!, String(req.params.id));
+    await taskService.remove(req.userId!, String(req.params.id));
     res.status(204).send();
   } catch (err) {
     next(err);
   }
 });
 
-router.patch('/tasks/:id/complete', (req, res, next) => {
+router.patch('/tasks/:id/complete', async (req, res, next) => {
   try {
-    const task = taskService.complete(req.userId!, String(req.params.id));
+    const task = await taskService.complete(req.userId!, String(req.params.id));
     res.json(task);
   } catch (err) {
     next(err);
   }
 });
 
-router.patch('/tasks/:id/uncomplete', (req, res, next) => {
+router.patch('/tasks/:id/uncomplete', async (req, res, next) => {
   try {
-    const task = taskService.uncomplete(req.userId!, String(req.params.id));
+    const task = await taskService.uncomplete(req.userId!, String(req.params.id));
     res.json(task);
   } catch (err) {
     next(err);
   }
 });
 
-router.get('/tasks/:parentId/subtasks', (req, res, next) => {
+router.get('/tasks/:parentId/subtasks', async (req, res, next) => {
   try {
-    const subtasks = taskService.getSubtasks(req.userId!, String(req.params.parentId));
+    const subtasks = await taskService.getSubtasks(req.userId!, String(req.params.parentId));
     res.json(subtasks);
   } catch (err) {
     next(err);
   }
 });
 
-router.post('/tasks/:parentId/subtasks', validate(createTaskSchema), (req, res, next) => {
+router.post('/tasks/:parentId/subtasks', validate(createTaskSchema), async (req, res, next) => {
   try {
-    const subtask = taskService.createSubtask(req.userId!, String(req.params.parentId), req.body);
+    const subtask = await taskService.createSubtask(req.userId!, String(req.params.parentId), req.body);
     res.status(201).json(subtask);
   } catch (err) {
     next(err);
