@@ -1,0 +1,83 @@
+<h2>免費部署平台比較</h2>
+<p class="subtitle">以下都有免費方案，適合個人專案。選擇你偏好的部署方式</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Render</h3>
+      <p>免費方案支援 Node.js 服務 + 靜態網站</p>
+      <ul>
+        <li>連結 GitHub repo 自動部署</li>
+        <li>免費方案：閒置 15 分鐘後休眠，首次請求需冷啟動 (~30s)</li>
+        <li>支援持久化磁碟（SQLite 友善）</li>
+        <li>自訂域名、HTTPS 自動設定</li>
+      </ul>
+      <p style="color: var(--accent); font-weight: 600;">⭐ 推薦 — 對 Express + SQLite 最友善</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Railway</h3>
+      <p>每月 $5 免費額度（約 500 小時執行時間）</p>
+      <ul>
+        <li>連結 GitHub repo 自動部署</li>
+        <li>不會休眠，回應速度快</li>
+        <li>支援持久化磁碟（付費方案）</li>
+        <li>免費額度用完需升級，SQLite 資料可能不持久</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Fly.io</h3>
+      <p>免費方案提供 3 個共享 CPU VM</p>
+      <ul>
+        <li>透過 Dockerfile 部署，支援全球多區域</li>
+        <li>內建持久化 Volume（SQLite 完美搭配）</li>
+        <li>需要安裝 flyctl CLI</li>
+        <li>設定稍微複雜一點，但效能好</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="option" data-choice="d" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>Vercel + GitHub Pages 混合</h3>
+      <p>前端 GitHub Pages + 後端 Vercel Serverless Functions</p>
+      <ul>
+        <li>前端真正部署在 GitHub 上</li>
+        <li>Vercel 免費方案很慷慨（每月 100GB 頻寬）</li>
+        <li>⚠️ Serverless 環境不支援 SQLite 檔案持久化</li>
+        <li>需改用 Turso (SQLite 雲端) 或其他遠端 DB</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="option" data-choice="e" onclick="toggleSelect(this)">
+    <div class="letter">E</div>
+    <div class="content">
+      <h3>Zeabur</h3>
+      <p>亞洲開發者友善的部署平台，有免費額度</p>
+      <ul>
+        <li>連結 GitHub repo 一鍵部署</li>
+        <li>介面支援中文</li>
+        <li>支援 Node.js + 持久化儲存</li>
+        <li>免費額度每月約 $5，超過需付費</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="option" data-choice="f" onclick="toggleSelect(this)">
+    <div class="letter">F</div>
+    <div class="content">
+      <h3>先不決定部署平台</h3>
+      <p>先專注開發，保持標準 Express 應用結構，之後再選擇部署平台。只要架構乾淨，遷移到任何平台都很容易。</p>
+    </div>
+  </div>
+</div>

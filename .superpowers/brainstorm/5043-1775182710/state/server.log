@@ -1,0 +1,6 @@
+{"type":"server-started","port":56219,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:56219","screen_dir":"/home/tony/cc_labs/eval_spec_design/.superpowers/brainstorm/5043-1775182710/content","state_dir":"/home/tony/cc_labs/eval_spec_design/.superpowers/brainstorm/5043-1775182710/state"}
+{"type":"screen-added","file":"/home/tony/cc_labs/eval_spec_design/.superpowers/brainstorm/5043-1775182710/content/approaches.html"}
+{"type":"screen-added","file":"/home/tony/cc_labs/eval_spec_design/.superpowers/brainstorm/5043-1775182710/content/deploy-options.html"}
+{"type":"screen-added","file":"/home/tony/cc_labs/eval_spec_design/.superpowers/brainstorm/5043-1775182710/content/render-vs-vercel-pg.html"}
+{"type":"screen-added","file":"/home/tony/cc_labs/eval_spec_design/.superpowers/brainstorm/5043-1775182710/content/frontend-layout.html"}
+{"type":"screen-added","file":"/home/tony/cc_labs/eval_spec_design/.superpowers/brainstorm/5043-1775182710/content/waiting.html"}

@@ -1,0 +1,66 @@
+<h2>架構方案選擇</h2>
+<p class="subtitle">三個方案各有取捨，請選擇最適合你的方向</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Monorepo 單一倉庫</h3>
+      <p><strong>結構：</strong>一個 GitHub repo，前後端分資料夾（<code>/client</code> + <code>/server</code>）</p>
+      <p><strong>部署：</strong>前端 build 後由 Express 提供靜態檔案服務，整個 app 部署為單一服務（可用 Railway / Render / Fly.io 免費方案）</p>
+      <p><strong>優點：</strong></p>
+      <ul>
+        <li>部署最簡單 — 一個服務搞定前後端</li>
+        <li>SQLite 檔案就在同一台，零設定</li>
+        <li>GitHub 管理方便，一個 repo 一次 PR</li>
+      </ul>
+      <p><strong>缺點：</strong></p>
+      <ul>
+        <li>無法用 GitHub Pages（需要後端運行環境）</li>
+        <li>前後端耦合在同一個部署單元</li>
+      </ul>
+      <p style="color: var(--accent); font-weight: 600;">⭐ 推薦方案 — 最符合 Express + SQLite 的特性</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>前後端分離部署</h3>
+      <p><strong>結構：</strong>一個 GitHub repo（monorepo），但前後端各自部署</p>
+      <p><strong>部署：</strong>前端 → GitHub Pages，後端 → Railway / Render / Fly.io</p>
+      <p><strong>優點：</strong></p>
+      <ul>
+        <li>前端真的部署在 GitHub Pages 上</li>
+        <li>前後端可以獨立擴展和部署</li>
+      </ul>
+      <p><strong>缺點：</strong></p>
+      <ul>
+        <li>需要處理 CORS 跨域問題</li>
+        <li>兩個部署流程要維護</li>
+        <li>後端仍然需要額外的託管平台</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Docker 容器化</h3>
+      <p><strong>結構：</strong>一個 GitHub repo，加上 Dockerfile 和 docker-compose</p>
+      <p><strong>部署：</strong>Docker image 部署到任何支援容器的平台，或本機 <code>docker compose up</code></p>
+      <p><strong>優點：</strong></p>
+      <ul>
+        <li>環境一致性最好，一鍵啟動</li>
+        <li>未來擴展到團隊版時最靈活</li>
+        <li>可部署到任何雲平台</li>
+      </ul>
+      <p><strong>缺點：</strong></p>
+      <ul>
+        <li>初始設定較複雜</li>
+        <li>本地開發需要安裝 Docker</li>
+        <li>對個人版來說可能有點 overkill</li>
+      </ul>
+    </div>
+  </div>
+</div>

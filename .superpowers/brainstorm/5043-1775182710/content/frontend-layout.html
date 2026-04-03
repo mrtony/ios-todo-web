@@ -1,0 +1,198 @@
+<h2>前端頁面架構</h2>
+<p class="subtitle">借鑑 iOS 待辦事項的佈局，用 shadcn/ui 風格呈現</p>
+
+<h3>頁面路由</h3>
+<div class="section" style="background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 24px; font-size: 14px;">
+  <table style="width:100%; border-collapse: collapse;">
+    <thead>
+      <tr style="border-bottom: 2px solid var(--border);">
+        <th style="text-align:left; padding:8px;">路由</th>
+        <th style="text-align:left; padding:8px;">頁面</th>
+        <th style="text-align:left; padding:8px;">說明</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom: 1px solid var(--border);">
+        <td style="padding:8px;"><code>/login</code></td>
+        <td style="padding:8px;">登入頁</td>
+        <td style="padding:8px;">登入 / 註冊切換</td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--border);">
+        <td style="padding:8px;"><code>/</code></td>
+        <td style="padding:8px;">主頁（清單總覽）</td>
+        <td style="padding:8px;">所有清單 + 任務統計</td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--border);">
+        <td style="padding:8px;"><code>/lists/:id</code></td>
+        <td style="padding:8px;">清單詳情</td>
+        <td style="padding:8px;">該清單下所有任務</td>
+      </tr>
+      <tr>
+        <td style="padding:8px;"><code>/settings</code></td>
+        <td style="padding:8px;">設定頁</td>
+        <td style="padding:8px;">帳號、主題偏好</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>主要佈局 Mockup</h3>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">主頁 — 清單總覽 (/)</div>
+    <div class="mockup-body" style="font-size: 13px; padding: 0;">
+      <div style="padding: 16px 20px; border-bottom: 1px solid var(--border);">
+        <div style="font-size: 24px; font-weight: 700;">我的清單</div>
+      </div>
+
+      <div style="padding: 12px 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div style="background: #3b82f6; border-radius: 12px; padding: 14px; color: white;">
+          <div style="font-size: 28px; font-weight: 700;">5</div>
+          <div style="font-size: 13px; opacity: 0.9;">今天</div>
+        </div>
+        <div style="background: #f97316; border-radius: 12px; padding: 14px; color: white;">
+          <div style="font-size: 28px; font-weight: 700;">3</div>
+          <div style="font-size: 13px; opacity: 0.9;">已排程</div>
+        </div>
+        <div style="background: #8b5cf6; border-radius: 12px; padding: 14px; color: white;">
+          <div style="font-size: 28px; font-weight: 700;">12</div>
+          <div style="font-size: 13px; opacity: 0.9;">全部</div>
+        </div>
+        <div style="background: #ef4444; border-radius: 12px; padding: 14px; color: white;">
+          <div style="font-size: 28px; font-weight: 700;">2</div>
+          <div style="font-size: 13px; opacity: 0.9;">已標記</div>
+        </div>
+      </div>
+
+      <div style="padding: 8px 20px;">
+        <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">我的清單</div>
+
+        <div style="display:flex; align-items:center; padding:12px 0; border-bottom: 1px solid var(--border);">
+          <div style="width:28px; height:28px; border-radius:50%; background:#3b82f6; margin-right:12px; display:flex;align-items:center;justify-content:center; font-size:14px;">📋</div>
+          <div style="flex:1; font-size:15px;">工作</div>
+          <div style="color: #888; font-size:14px;">3</div>
+        </div>
+        <div style="display:flex; align-items:center; padding:12px 0; border-bottom: 1px solid var(--border);">
+          <div style="width:28px; height:28px; border-radius:50%; background:#22c55e; margin-right:12px; display:flex;align-items:center;justify-content:center; font-size:14px;">🏠</div>
+          <div style="flex:1; font-size:15px;">生活</div>
+          <div style="color: #888; font-size:14px;">5</div>
+        </div>
+        <div style="display:flex; align-items:center; padding:12px 0; border-bottom: 1px solid var(--border);">
+          <div style="width:28px; height:28px; border-radius:50%; background:#f97316; margin-right:12px; display:flex;align-items:center;justify-content:center; font-size:14px;">🛒</div>
+          <div style="flex:1; font-size:15px;">購物</div>
+          <div style="color: #888; font-size:14px;">4</div>
+        </div>
+      </div>
+
+      <div style="padding: 16px 20px; display:flex; justify-content:space-between;">
+        <div style="color: var(--accent); font-size:14px; cursor:pointer;">+ 新增清單</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">清單詳情 — /lists/:id</div>
+    <div class="mockup-body" style="font-size: 13px; padding: 0;">
+      <div style="padding: 12px 20px; border-bottom: 1px solid var(--border); display:flex; align-items:center;">
+        <span style="color: var(--accent); margin-right:8px;">← 返回</span>
+        <span style="flex:1; font-size: 18px; font-weight: 600; color: #3b82f6;">工作</span>
+        <span style="color: #888;">⋯</span>
+      </div>
+
+      <div style="padding: 8px 20px;">
+        <div style="display:flex; align-items:flex-start; padding:12px 0; border-bottom: 1px solid var(--border);">
+          <div style="width:22px; height:22px; border-radius:50%; border: 2px solid #3b82f6; margin-right:12px; margin-top:1px; flex-shrink:0;"></div>
+          <div style="flex:1;">
+            <div style="font-size:15px;">完成專案報告</div>
+            <div style="font-size:12px; color:#888; margin-top:2px;">明天 · 🔴 高優先</div>
+            <div style="font-size:12px; color:#888; margin-top:2px;">
+              <span style="background: var(--border); padding:2px 6px; border-radius:4px; margin-right:4px;">工作</span>
+              <span style="background: var(--border); padding:2px 6px; border-radius:4px;">重要</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:flex-start; padding:12px 0; border-bottom: 1px solid var(--border);">
+          <div style="width:22px; height:22px; border-radius:50%; border: 2px solid #3b82f6; margin-right:12px; margin-top:1px; flex-shrink:0;"></div>
+          <div style="flex:1;">
+            <div style="font-size:15px;">寄送客戶提案</div>
+            <div style="font-size:12px; color:#888; margin-top:2px;">週五 · 🟡 中優先</div>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:flex-start; padding:12px 0; border-bottom: 1px solid var(--border); opacity:0.5;">
+          <div style="width:22px; height:22px; border-radius:50%; background: #3b82f6; margin-right:12px; margin-top:1px; flex-shrink:0; display:flex;align-items:center;justify-content:center;">
+            <span style="color:white; font-size:12px;">✓</span>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:15px; text-decoration:line-through;">更新週報</div>
+            <div style="font-size:12px; color:#888; margin-top:2px;">已完成</div>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; padding:12px 0; border-bottom: 1px solid var(--border);">
+          <div style="margin-left: 34px;">
+            <div style="font-size:14px; color:#888;">↳ 收集數據</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; padding:12px 0; border-bottom: 1px solid var(--border);">
+          <div style="margin-left: 34px;">
+            <div style="font-size:14px; color:#888;">↳ 撰寫摘要</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding: 16px 20px; border-top: 1px solid var(--border);">
+        <div style="color: var(--accent); font-size:14px; cursor:pointer;">+ 新增任務</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top: 32px;">元件樹</h3>
+<div class="mockup">
+  <div class="mockup-header">React 元件架構</div>
+  <div class="mockup-body" style="font-size: 13px; font-family: monospace; line-height: 1.8;">
+    <div>App</div>
+    <div>├── AuthProvider <span style="color:#888;">（JWT 狀態管理）</span></div>
+    <div>├── LoginPage</div>
+    <div>│   └── AuthForm <span style="color:#888;">（登入/註冊切換）</span></div>
+    <div>├── MainLayout</div>
+    <div>│   ├── Header <span style="color:#888;">（標題、設定按鈕）</span></div>
+    <div>│   └── Outlet</div>
+    <div>├── HomePage</div>
+    <div>│   ├── SmartListGrid <span style="color:#888;">（今天/已排程/全部/已標記）</span></div>
+    <div>│   ├── ListGroup <span style="color:#888;">（清單列表）</span></div>
+    <div>│   │   └── ListItem <span style="color:#888;">（單一清單行）</span></div>
+    <div>│   └── AddListButton</div>
+    <div>├── ListDetailPage</div>
+    <div>│   ├── ListHeader <span style="color:#888;">（返回、清單名、選單）</span></div>
+    <div>│   ├── TaskList</div>
+    <div>│   │   ├── TaskItem <span style="color:#888;">（勾選、標題、標籤、優先順序）</span></div>
+    <div>│   │   └── SubtaskItem <span style="color:#888;">（縮排子任務）</span></div>
+    <div>│   ├── AddTaskButton</div>
+    <div>│   └── TaskDetailSheet <span style="color:#888;">（底部彈出編輯面板）</span></div>
+    <div>└── SettingsPage</div>
+    <div>&nbsp;&nbsp;&nbsp;&nbsp;├── ProfileSection</div>
+    <div>&nbsp;&nbsp;&nbsp;&nbsp;└── ThemeToggle <span style="color:#888;">（亮/暗主題）</span></div>
+  </div>
+</div>
+
+<h3 style="margin-top: 32px;">你覺得這個佈局方向如何？</h3>
+<div class="options">
+  <div class="option" data-choice="approve" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content">
+      <h3>看起來不錯</h3>
+      <p>佈局和元件架構可以接受，繼續下一段</p>
+    </div>
+  </div>
+  <div class="option" data-choice="revise" onclick="toggleSelect(this)">
+    <div class="letter">✎</div>
+    <div class="content">
+      <h3>需要修改</h3>
+      <p>有些地方想調整，在終端告訴我</p>
+    </div>
+  </div>
+</div>

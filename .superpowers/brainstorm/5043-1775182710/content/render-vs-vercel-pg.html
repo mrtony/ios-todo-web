@@ -1,0 +1,129 @@
+<h2>方案 A vs D：改用 PostgreSQL 的免費比較</h2>
+<p class="subtitle">兩個方案都可以搭配免費 PostgreSQL，以下是完整比較</p>
+
+<h3>免費 PostgreSQL 託管服務</h3>
+<div class="section" style="background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+  <table style="width:100%; border-collapse: collapse; font-size: 14px;">
+    <thead>
+      <tr style="border-bottom: 2px solid var(--border);">
+        <th style="text-align:left; padding:8px;">平台</th>
+        <th style="text-align:left; padding:8px;">免費額度</th>
+        <th style="text-align:left; padding:8px;">限制</th>
+        <th style="text-align:left; padding:8px;">備註</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom: 1px solid var(--border);">
+        <td style="padding:8px; font-weight:600;">Neon</td>
+        <td style="padding:8px;">0.5 GB 儲存<br>190 計算小時/月</td>
+        <td style="padding:8px;">閒置 5 分鐘後暫停<br>冷啟動 ~1-3s</td>
+        <td style="padding:8px; color: var(--accent);">⭐ 推薦，Serverless 友善</td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--border);">
+        <td style="padding:8px; font-weight:600;">Supabase</td>
+        <td style="padding:8px;">0.5 GB 儲存<br>2 個免費專案</td>
+        <td style="padding:8px;">閒置 7 天後暫停<br>需手動喚醒</td>
+        <td style="padding:8px;">附帶 Auth、Storage 等額外功能</td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--border);">
+        <td style="padding:8px; font-weight:600;">Render PostgreSQL</td>
+        <td style="padding:8px;">256 MB 儲存</td>
+        <td style="padding:8px;">免費 DB 90 天後過期刪除</td>
+        <td style="padding:8px;">⚠️ 90 天限制是硬傷</td>
+      </tr>
+      <tr>
+        <td style="padding:8px; font-weight:600;">Vercel Postgres</td>
+        <td style="padding:8px;">256 MB 儲存</td>
+        <td style="padding:8px;">底層是 Neon<br>綁定 Vercel 生態</td>
+        <td style="padding:8px;">與 Vercel 整合最無縫</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>方案對比</h3>
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">方案 A：Render 全包</div>
+    <div class="mockup-body" style="font-size:14px;">
+      <p><strong>架構：</strong><br>Express API + Vite 靜態檔 → Render Web Service<br>PostgreSQL → Neon 免費方案</p>
+      <hr style="border-color: var(--border); margin: 12px 0;">
+      <p><strong>免費嗎？ ✅ 是</strong></p>
+      <ul style="margin:8px 0;">
+        <li>Render Web Service：免費（閒置 15 分鐘休眠）</li>
+        <li>Neon PostgreSQL：免費 0.5 GB</li>
+      </ul>
+      <hr style="border-color: var(--border); margin: 12px 0;">
+      <p style="color: #4ade80;"><strong>✅ 優點</strong></p>
+      <ul style="margin:8px 0;">
+        <li>一個服務搞定，部署簡單</li>
+        <li>GitHub 連結自動部署</li>
+        <li>標準 Node.js 環境，除錯方便</li>
+        <li>可用 ORM (Prisma/Drizzle) 連 Neon</li>
+      </ul>
+      <hr style="border-color: var(--border); margin: 12px 0;">
+      <p style="color: #f87171;"><strong>❌ 缺點</strong></p>
+      <ul style="margin:8px 0;">
+        <li>休眠後首次請求慢 (~30s)</li>
+        <li>兩個平台要管（Render + Neon）</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">方案 D：Vercel + GitHub Pages</div>
+    <div class="mockup-body" style="font-size:14px;">
+      <p><strong>架構：</strong><br>前端靜態檔 → GitHub Pages<br>API → Vercel Serverless Functions<br>PostgreSQL → Neon 或 Vercel Postgres</p>
+      <hr style="border-color: var(--border); margin: 12px 0;">
+      <p><strong>免費嗎？ ✅ 是</strong></p>
+      <ul style="margin:8px 0;">
+        <li>GitHub Pages：免費</li>
+        <li>Vercel Functions：免費（每月 100GB）</li>
+        <li>Neon / Vercel Postgres：免費 0.5 GB</li>
+      </ul>
+      <hr style="border-color: var(--border); margin: 12px 0;">
+      <p style="color: #4ade80;"><strong>✅ 優點</strong></p>
+      <ul style="margin:8px 0;">
+        <li>前端不休眠，載入速度快</li>
+        <li>Serverless 自動擴展，不用管伺服器</li>
+        <li>GitHub Pages 部署真正在 GitHub 上</li>
+        <li>Vercel + Neon 整合成熟</li>
+      </ul>
+      <hr style="border-color: var(--border); margin: 12px 0;">
+      <p style="color: #f87171;"><strong>❌ 缺點</strong></p>
+      <ul style="margin:8px 0;">
+        <li>需改寫 Express → Serverless 函數</li>
+        <li>三個平台要管（GitHub + Vercel + Neon）</li>
+        <li>CORS 跨域設定</li>
+        <li>除錯比傳統 Node.js 困難</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top:32px;">我的推薦</h3>
+<div class="section" style="background: var(--card-bg); border-radius: 12px; padding: 20px;">
+  <p>兩個方案都是 <strong>完全免費</strong> 的。核心差異在於：</p>
+  <ul>
+    <li><strong>方案 A</strong> — 開發體驗更好，傳統 Express 寫法，本地和線上環境一致，適合快速迭代</li>
+    <li><strong>方案 D</strong> — 前端載入更快（GitHub Pages 不休眠），但需要適應 Serverless 寫法</li>
+  </ul>
+  <p style="margin-top:12px;">如果你的目標是<strong>快速把功能做出來</strong>，推薦 <strong>方案 A</strong>。<br>如果你很在意<strong>前端在 GitHub 上 + 不休眠</strong>，推薦 <strong>方案 D</strong>。</p>
+</div>
+
+<div class="options" style="margin-top:24px;">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>選方案 A：Render + Neon</h3>
+      <p>簡單直接，快速開發</p>
+    </div>
+  </div>
+  <div class="option" data-choice="d" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>選方案 D：GitHub Pages + Vercel + Neon</h3>
+      <p>前端在 GitHub，Serverless 架構</p>
+    </div>
+  </div>
+</div>
