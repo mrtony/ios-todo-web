@@ -13,12 +13,12 @@
 | 前端狀態管理 | TanStack Query（伺服器狀態）+ React useState/useContext（客戶端狀態） |
 | HTTP 客戶端 | axios |
 | 後端框架 | Express |
-| 資料庫 | SQLite |
+| 資料庫 | PostgreSQL (Neon 免費方案) |
 | 認證 | JWT（access token 15 分鐘 + refresh token 7 天） |
 | 密碼雜湊 | bcrypt（cost factor 12） |
 | 輸入驗證 | zod |
 | 測試 | Vitest + Supertest + Testing Library |
-| 部署 | Render（免費方案，持久化磁碟） |
+| 部署 | Render（免費方案）+ Neon PostgreSQL |
 | 原始碼託管 | GitHub |
 
 ## 架構
@@ -28,7 +28,7 @@
 ```
 todo-app/
 ├── client/          # Vite + React + shadcn/ui
-├── server/          # Express + SQLite
+├── server/          # Express + PostgreSQL
 ├── package.json     # 根層 scripts（dev, build, start）
 └── render.yaml      # Render 部署設定
 ```
@@ -52,7 +52,7 @@ todo-app/
 │  └──────────┬───────────────────────────┘   │
 │             │                                │
 │  ┌──────────▼───────────────────────────┐   │
-│  │  SQLite（持久化磁碟）                 │   │
+│  │  Neon PostgreSQL                     │   │
 │  └──────────────────────────────────────┘   │
 │                                              │
 └─────────────────────────────────────────────┘
@@ -328,7 +328,7 @@ App
 | 前端元件測試 | Vitest + Testing Library | 關鍵互動（勾選任務、新增清單） |
 | E2E 測試 | 延後至 v2 | 未來可加 Playwright |
 
-- 測試使用獨立的 in-memory SQLite，不影響開發資料
+- 測試使用獨立的 PGlite（嵌入式 PostgreSQL），不影響開發資料
 - CI：GitHub Actions，push 時自動跑測試
 
 ## 安全性
