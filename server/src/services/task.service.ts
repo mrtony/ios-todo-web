@@ -173,37 +173,39 @@ export async function create(
   },
 ): Promise<Task> {
   await verifyListOwnership(userId, listId);
-  const db = getDb();
   const id = uuid();
   const now = new Date().toISOString();
-  const maxOrder = await db.query<{ max: number | null }>(
-    'SELECT MAX(sort_order) AS max FROM tasks WHERE list_id = $1 AND parent_id IS NULL',
-    [listId],
-  );
-  const sortOrder = (maxOrder.rows[0]?.max ?? -1) + 1;
 
-  await db.query(
-    `
-      INSERT INTO tasks (id, list_id, title, notes, due_date, priority, flagged, recurrence, sort_order, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-    `,
-    [
-      id,
-      listId,
-      data.title,
-      data.notes || '',
-      data.due_date || null,
-      data.priority ?? 0,
-      data.flagged ? 1 : 0,
-      data.recurrence || null,
-      sortOrder,
-      now,
-      now,
-    ],
-  );
+  return withTransaction(async (client) => {
+    const maxOrder = await client.query<{ max: number | null }>(
+      'SELECT MAX(sort_order) AS max FROM tasks WHERE list_id = $1 AND parent_id IS NULL',
+      [listId],
+    );
+    const sortOrder = (maxOrder.rows[0]?.max ?? -1) + 1;
 
-  const result = await db.query<Task>('SELECT * FROM tasks WHERE id = $1', [id]);
-  return result.rows[0]!;
+    await client.query(
+      `
+        INSERT INTO tasks (id, list_id, title, notes, due_date, priority, flagged, recurrence, sort_order, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      `,
+      [
+        id,
+        listId,
+        data.title,
+        data.notes || '',
+        data.due_date || null,
+        data.priority ?? 0,
+        data.flagged ? 1 : 0,
+        data.recurrence || null,
+        sortOrder,
+        now,
+        now,
+      ],
+    );
+
+    const result = await client.query<Task>('SELECT * FROM tasks WHERE id = $1', [id]);
+    return result.rows[0]!;
+  });
 }
 
 export async function update(
@@ -269,44 +271,45 @@ export async function remove(userId: string, taskId: string): Promise<void> {
 
 export async function complete(userId: string, taskId: string): Promise<Task> {
   const task = await verifyTaskOwnership(userId, taskId);
-  const db = getDb();
   const now = new Date().toISOString();
 
-  await db.query('UPDATE tasks SET completed_at = $1, updated_at = $2 WHERE id = $3', [now, now, taskId]);
+  return withTransaction(async (client) => {
+    await client.query('UPDATE tasks SET completed_at = $1, updated_at = $2 WHERE id = $3', [now, now, taskId]);
 
-  const recurrence = parseRecurrence(task.recurrence);
-  if (recurrence && task.due_date) {
-    const nextDueDate = getNextDueDate(task.due_date, recurrence);
-    const nextId = uuid();
-    const maxOrder = await db.query<{ max: number | null }>(
-      'SELECT MAX(sort_order) AS max FROM tasks WHERE list_id = $1 AND parent_id IS NULL',
-      [task.list_id],
-    );
-    const sortOrder = (maxOrder.rows[0]?.max ?? -1) + 1;
+    const recurrence = parseRecurrence(task.recurrence);
+    if (recurrence && task.due_date) {
+      const nextDueDate = getNextDueDate(task.due_date, recurrence);
+      const nextId = uuid();
+      const maxOrder = await client.query<{ max: number | null }>(
+        'SELECT MAX(sort_order) AS max FROM tasks WHERE list_id = $1 AND parent_id IS NULL',
+        [task.list_id],
+      );
+      const sortOrder = (maxOrder.rows[0]?.max ?? -1) + 1;
 
-    await db.query(
-      `
-        INSERT INTO tasks (id, list_id, parent_id, title, notes, due_date, priority, flagged, recurrence, sort_order, created_at, updated_at)
-        VALUES ($1, $2, NULL, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-      `,
-      [
-        nextId,
-        task.list_id,
-        task.title,
-        task.notes,
-        nextDueDate,
-        task.priority,
-        task.flagged,
-        task.recurrence,
-        sortOrder,
-        now,
-        now,
-      ],
-    );
-  }
+      await client.query(
+        `
+          INSERT INTO tasks (id, list_id, parent_id, title, notes, due_date, priority, flagged, recurrence, sort_order, created_at, updated_at)
+          VALUES ($1, $2, NULL, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        `,
+        [
+          nextId,
+          task.list_id,
+          task.title,
+          task.notes,
+          nextDueDate,
+          task.priority,
+          task.flagged,
+          task.recurrence,
+          sortOrder,
+          now,
+          now,
+        ],
+      );
+    }
 
-  const result = await db.query<Task>('SELECT * FROM tasks WHERE id = $1', [taskId]);
-  return result.rows[0]!;
+    const result = await client.query<Task>('SELECT * FROM tasks WHERE id = $1', [taskId]);
+    return result.rows[0]!;
+  });
 }
 
 export async function uncomplete(userId: string, taskId: string): Promise<Task> {

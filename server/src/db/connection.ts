@@ -1,4 +1,5 @@
 import { Pool, type QueryResult, type QueryResultRow } from 'pg';
+import { config } from '../config.js';
 
 let pool: Pool | DbClient | undefined;
 
@@ -9,7 +10,7 @@ export interface DbClient {
 export function getPool(): Pool {
   if (!pool) {
     pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
+      connectionString: config.databaseUrl,
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
     });
   }

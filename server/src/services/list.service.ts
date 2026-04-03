@@ -25,26 +25,32 @@ export async function create(
   userId: string,
   data: { name: string; color?: string; icon?: string },
 ): Promise<List> {
-  const db = getDb();
   const id = uuid();
   const now = new Date().toISOString();
-  const maxOrder = await db.query<{ max: number | null }>('SELECT MAX(sort_order) AS max FROM lists WHERE user_id = $1', [userId]);
-  const sortOrder = (maxOrder.rows[0]?.max ?? -1) + 1;
 
-  try {
-    await db.query(
-      'INSERT INTO lists (id, user_id, name, color, icon, sort_order, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
-      [id, userId, data.name, data.color || '#3b82f6', data.icon || 'list', sortOrder, now, now],
+  return withTransaction(async (client) => {
+    const maxOrder = await client.query<{ max: number | null }>(
+      'SELECT MAX(sort_order) AS max FROM lists WHERE user_id = $1',
+      [userId],
     );
-  } catch (err: any) {
-    if (err.code === '23505') {
-      throw new AppError(409, 'CONFLICT', 'A list with this name already exists');
+    const sortOrder = (maxOrder.rows[0]?.max ?? -1) + 1;
+
+    try {
+      await client.query(
+        'INSERT INTO lists (id, user_id, name, color, icon, sort_order, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+        [id, userId, data.name, data.color || '#3b82f6', data.icon || 'list', sortOrder, now, now],
+      );
+    } catch (err: any) {
+      if (err.code === '23505') {
+        throw new AppError(409, 'CONFLICT', 'A list with this name already exists');
+      }
+
+      throw err;
     }
 
-    throw err;
-  }
-
-  return getById(userId, id);
+    const result = await client.query<List>('SELECT * FROM lists WHERE id = $1 AND user_id = $2', [id, userId]);
+    return result.rows[0]!;
+  });
 }
 
 export async function update(
