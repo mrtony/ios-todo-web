@@ -1,35 +1,53 @@
-import Database from 'better-sqlite3';
-import path from 'path';
+import { Pool, type QueryResult } from 'pg';
 
-let db: Database.Database | undefined;
+let pool: Pool | DbClient | undefined;
 
-export function getDb(): Database.Database {
-  if (!db) {
-    const dbPath = process.env.DB_PATH || path.join(__dirname, '../../data/todo.db');
-    db = new Database(dbPath);
-    db.pragma('journal_mode = WAL');
-    db.pragma('foreign_keys = ON');
+export interface DbClient {
+  query<T = any>(text: string, params?: any[]): Promise<QueryResult<T>>;
+}
+
+export function getPool(): Pool {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
+    });
   }
 
-  return db;
-}
-
-export function createTestDb(): Database.Database {
-  const testDb = new Database(':memory:');
-  testDb.pragma('foreign_keys = ON');
-  return testDb;
-}
-
-export function setDb(newDb: Database.Database): void {
-  if (db && db !== newDb) {
-    db.close();
+  if (!(pool instanceof Pool)) {
+    throw new Error('Database pool is not a pg Pool instance');
   }
-  db = newDb;
+
+  return pool;
 }
 
-export function closeDb(): void {
-  if (db) {
-    db.close();
-    db = undefined;
+export function getDb(): DbClient {
+  if (!pool) {
+    return getPool();
+  }
+
+  return pool;
+}
+
+export function setDb(newDb: DbClient): void {
+  pool = newDb;
+}
+
+export async function closeDb(): Promise<void> {
+  if (pool instanceof Pool) {
+    await pool.end();
+  }
+
+  pool = undefined;
+}
+
+export async function execMultiple(db: DbClient, sql: string): Promise<void> {
+  const statements = sql
+    .split(';')
+    .map((statement) => statement.trim())
+    .filter((statement) => statement.length > 0);
+
+  for (const statement of statements) {
+    await db.query(statement);
   }
 }
