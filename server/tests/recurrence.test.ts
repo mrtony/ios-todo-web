@@ -23,7 +23,7 @@ describe('Recurring tasks', () => {
     await authRequest('patch', `/api/tasks/${task.body.id}/complete`, token);
 
     const tasks = await authRequest('get', `/api/lists/${listId}/tasks`, token);
-    const incomplete = tasks.body.filter((entry: any) => !entry.completed_at);
+    const incomplete = tasks.body.tasks.filter((entry: any) => !entry.completed_at);
 
     expect(incomplete).toHaveLength(1);
     expect(incomplete[0].title).toBe('Daily standup');
@@ -42,7 +42,7 @@ describe('Recurring tasks', () => {
     await authRequest('patch', `/api/tasks/${task.body.id}/complete`, token);
 
     const tasks = await authRequest('get', `/api/lists/${listId}/tasks`, token);
-    const incomplete = tasks.body.filter((entry: any) => !entry.completed_at);
+    const incomplete = tasks.body.tasks.filter((entry: any) => !entry.completed_at);
 
     expect(incomplete).toHaveLength(1);
     expect(incomplete[0].due_date).toBe('2026-04-10T09:00:00.000Z');
@@ -55,7 +55,7 @@ describe('Recurring tasks', () => {
     await authRequest('patch', `/api/tasks/${task.body.id}/complete`, token);
 
     const tasks = await authRequest('get', `/api/lists/${listId}/tasks`, token);
-    const incomplete = tasks.body.filter((entry: any) => !entry.completed_at);
+    const incomplete = tasks.body.tasks.filter((entry: any) => !entry.completed_at);
 
     expect(incomplete).toHaveLength(0);
   });

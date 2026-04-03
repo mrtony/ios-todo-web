@@ -9,6 +9,7 @@ interface TaskItemProps {
   dueDate: string | null;
   flagged: boolean;
   color: string;
+  tags?: { name: string; color: string }[];
   onToggleComplete: (id: string) => void;
   onClick: (id: string) => void;
 }
@@ -27,6 +28,7 @@ export default function TaskItem({
   dueDate,
   flagged,
   color,
+  tags,
   onToggleComplete,
   onClick,
 }: TaskItemProps) {
@@ -70,6 +72,16 @@ export default function TaskItem({
           {flagged && (
             <Badge variant="secondary" className="bg-orange-100 text-xs text-orange-700">⚑</Badge>
           )}
+          {tags?.map((tag) => (
+            <Badge
+              key={tag.name}
+              variant="secondary"
+              className="text-xs"
+              style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
+            >
+              {tag.name}
+            </Badge>
+          ))}
         </div>
       </div>
     </div>

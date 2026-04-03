@@ -1,8 +1,9 @@
 import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import { config } from '../config.js';
 import { AppError } from './error-handler.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
+const { jwtSecret: JWT_SECRET } = config;
 
 declare global {
   namespace Express {

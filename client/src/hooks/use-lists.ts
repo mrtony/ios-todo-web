@@ -49,6 +49,27 @@ export function useReorderLists() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (orderedIds: string[]) => api.patch('/lists/reorder', { orderedIds }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['lists'] }),
+    onMutate: async (orderedIds: string[]) => {
+      await queryClient.cancelQueries({ queryKey: ['lists'] });
+      const previous = queryClient.getQueryData<List[]>(['lists']);
+
+      queryClient.setQueryData<List[]>(['lists'], (old) => {
+        if (!old) {
+          return old;
+        }
+        const map = new Map(old.map((list) => [list.id, list]));
+        return orderedIds.map((id, index) => ({ ...map.get(id)!, sort_order: index }));
+      });
+
+      return { previous };
+    },
+    onError: (_err, _ids, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['lists'], context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['lists'] });
+    },
   });
 }

@@ -4,6 +4,16 @@ import { useNavigate, useParams } from 'react-router-dom';
 import AddTaskButton from '@/components/tasks/AddTaskButton';
 import TaskDetailSheet from '@/components/tasks/TaskDetailSheet';
 import TaskList from '@/components/tasks/TaskList';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useDeleteList, useLists } from '@/hooks/use-lists';
@@ -13,9 +23,12 @@ export default function ListDetailPage() {
   const { id: listId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: lists = [] } = useLists();
-  const { data: tasks = [], isLoading } = useTasks(listId!);
+  const { data, isLoading } = useTasks(listId!);
+  const tasks = data?.tasks ?? [];
+  const subtasks = data?.subtasks ?? {};
   const deleteList = useDeleteList();
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const list = lists.find((entry) => entry.id === listId);
 
@@ -47,7 +60,7 @@ export default function ListDetailPage() {
             <MoreHorizontal className="h-5 w-5" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem className="text-destructive" onClick={handleDeleteList}>
+            <DropdownMenuItem className="text-destructive" onClick={() => setShowDeleteConfirm(true)}>
               <Trash2 className="mr-2 h-4 w-4" />
               刪除清單
             </DropdownMenuItem>
@@ -61,6 +74,7 @@ export default function ListDetailPage() {
         <>
           <TaskList
             tasks={tasks}
+            subtasks={subtasks}
             listId={listId!}
             listColor={list?.color || '#3b82f6'}
             onTaskClick={setSelectedTaskId}
@@ -74,10 +88,31 @@ export default function ListDetailPage() {
           taskId={selectedTaskId}
           listId={listId!}
           task={tasks.find((task) => task.id === selectedTaskId)!}
+          subtasks={subtasks[selectedTaskId] || []}
           open={!!selectedTaskId}
           onOpenChange={(open) => !open && setSelectedTaskId(null)}
         />
       )}
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>確認刪除清單？</AlertDialogTitle>
+            <AlertDialogDescription>
+              這會同時刪除清單中的所有任務，此操作無法復原。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteList}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              刪除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

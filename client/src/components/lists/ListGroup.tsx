@@ -9,6 +9,7 @@ interface List {
   id: string;
   name: string;
   color: string;
+  icon: string;
 }
 
 interface ListGroupProps {
@@ -26,7 +27,7 @@ function SortableListItem({ list, taskCount }: { list: List; taskCount: number }
         <GripVertical className="h-4 w-4" />
       </button>
       <div className="flex-1">
-        <ListItem id={list.id} name={list.name} color={list.color} taskCount={taskCount} />
+        <ListItem id={list.id} name={list.name} color={list.color} icon={list.icon} taskCount={taskCount} />
       </div>
     </div>
   );

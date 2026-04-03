@@ -29,7 +29,20 @@ function getNextDueDate(currentDue: string, recurrence: Recurrence): string {
       date.setDate(date.getDate() + recurrence.interval);
       break;
     case 'weekly':
-      date.setDate(date.getDate() + 7 * recurrence.interval);
+      if (recurrence.days && recurrence.days.length > 0) {
+        const currentDay = date.getDay();
+        const sortedDays = [...recurrence.days].sort((a, b) => a - b);
+        const nextDay = sortedDays.find((day) => day > currentDay);
+
+        if (nextDay !== undefined) {
+          date.setDate(date.getDate() + (nextDay - currentDay));
+        } else {
+          const daysUntilNextWeek = 7 - currentDay + sortedDays[0];
+          date.setDate(date.getDate() + daysUntilNextWeek + 7 * (recurrence.interval - 1));
+        }
+      } else {
+        date.setDate(date.getDate() + 7 * recurrence.interval);
+      }
       break;
     case 'monthly':
       date.setMonth(date.getMonth() + recurrence.interval);
@@ -68,6 +81,53 @@ export function getByList(userId: string, listId: string): Task[] {
   return db.prepare(`
     SELECT * FROM tasks WHERE list_id = ? AND parent_id IS NULL ORDER BY sort_order ASC
   `).all(listId) as Task[];
+}
+
+export function getByListWithSubtasks(
+  userId: string,
+  listId: string,
+): { tasks: (Task & { tags: { name: string; color: string }[] })[]; subtasks: Record<string, (Task & { tags: { name: string; color: string }[] })[]> } {
+  verifyListOwnership(userId, listId);
+  const db = getDb();
+
+  const allTasks = db.prepare('SELECT * FROM tasks WHERE list_id = ? ORDER BY sort_order ASC').all(listId) as Task[];
+
+  const taskIds = allTasks.map((task) => task.id);
+  const tagMap: Record<string, { name: string; color: string }[]> = {};
+
+  if (taskIds.length > 0) {
+    const placeholders = taskIds.map(() => '?').join(',');
+    const rows = db.prepare(`
+      SELECT tt.task_id, t.name, t.color
+      FROM task_tags tt JOIN tags t ON tt.tag_id = t.id
+      WHERE tt.task_id IN (${placeholders})
+      ORDER BY t.name ASC
+    `).all(...taskIds) as { task_id: string; name: string; color: string }[];
+
+    for (const row of rows) {
+      if (!tagMap[row.task_id]) {
+        tagMap[row.task_id] = [];
+      }
+      tagMap[row.task_id].push({ name: row.name, color: row.color });
+    }
+  }
+
+  const tasks: (Task & { tags: { name: string; color: string }[] })[] = [];
+  const subtasks: Record<string, (Task & { tags: { name: string; color: string }[] })[]> = {};
+
+  for (const task of allTasks) {
+    const enriched = { ...task, tags: tagMap[task.id] || [] };
+    if (task.parent_id === null) {
+      tasks.push(enriched);
+    } else {
+      if (!subtasks[task.parent_id]) {
+        subtasks[task.parent_id] = [];
+      }
+      subtasks[task.parent_id].push(enriched);
+    }
+  }
+
+  return { tasks, subtasks };
 }
 
 export function getAllForUser(userId: string): Task[] {

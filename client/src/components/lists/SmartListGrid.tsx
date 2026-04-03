@@ -1,4 +1,5 @@
 import { Calendar, CalendarDays, Flag, Inbox } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface SmartListProps {
   todayCount: number;
@@ -20,6 +21,7 @@ export default function SmartListGrid({
   allCount,
   flaggedCount,
 }: SmartListProps) {
+  const navigate = useNavigate();
   const counts: Record<string, number> = {
     today: todayCount,
     scheduled: scheduledCount,
@@ -33,6 +35,7 @@ export default function SmartListGrid({
         <div
           key={key}
           className={`${color} cursor-pointer rounded-xl p-4 text-white transition-opacity hover:opacity-90`}
+          onClick={() => navigate(`/smart/${key}`)}
         >
           <div className="text-3xl font-bold">{counts[key]}</div>
           <div className="flex items-center gap-1 text-sm opacity-90">

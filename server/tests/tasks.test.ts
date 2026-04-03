@@ -48,18 +48,19 @@ describe('POST /api/lists/:listId/tasks', () => {
 });
 
 describe('GET /api/lists/:listId/tasks', () => {
-  it('should return tasks ordered by sort_order', async () => {
+  it('should return tasks and subtasks', async () => {
     await authRequest('post', `/api/lists/${listId}/tasks`, token).send({ title: 'First' });
     await authRequest('post', `/api/lists/${listId}/tasks`, token).send({ title: 'Second' });
 
     const res = await authRequest('get', `/api/lists/${listId}/tasks`, token);
 
-    expect(res.body).toHaveLength(2);
-    expect(res.body[0].title).toBe('First');
-    expect(res.body[1].title).toBe('Second');
+    expect(res.body.tasks).toHaveLength(2);
+    expect(res.body.tasks[0].title).toBe('First');
+    expect(res.body.tasks[1].title).toBe('Second');
+    expect(res.body.subtasks).toBeDefined();
   });
 
-  it('should not include subtasks in top-level list', async () => {
+  it('should include subtasks grouped by parent_id', async () => {
     const parent = await authRequest('post', `/api/lists/${listId}/tasks`, token)
       .send({ title: 'Parent' });
     await authRequest('post', `/api/tasks/${parent.body.id}/subtasks`, token)
@@ -67,8 +68,9 @@ describe('GET /api/lists/:listId/tasks', () => {
 
     const res = await authRequest('get', `/api/lists/${listId}/tasks`, token);
 
-    expect(res.body).toHaveLength(1);
-    expect(res.body[0].title).toBe('Parent');
+    expect(res.body.tasks).toHaveLength(1);
+    expect(res.body.subtasks[parent.body.id]).toHaveLength(1);
+    expect(res.body.subtasks[parent.body.id][0].title).toBe('Child');
   });
 });
 
@@ -125,7 +127,7 @@ describe('PATCH /api/lists/:listId/tasks/reorder', () => {
       .send({ orderedIds: [b.body.id, a.body.id] });
 
     const res = await authRequest('get', `/api/lists/${listId}/tasks`, token);
-    expect(res.body[0].title).toBe('B');
-    expect(res.body[1].title).toBe('A');
+    expect(res.body.tasks[0].title).toBe('B');
+    expect(res.body.tasks[1].title).toBe('A');
   });
 });

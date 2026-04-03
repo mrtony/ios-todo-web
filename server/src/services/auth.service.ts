@@ -1,13 +1,16 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { v4 as uuid } from 'uuid';
+import { config } from '../config.js';
 import { getDb } from '../db/connection.js';
 import { AppError } from '../middleware/error-handler.js';
 import type { User } from '../types.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret';
-const BCRYPT_ROUNDS = 12;
+const {
+  jwtSecret: JWT_SECRET,
+  jwtRefreshSecret: JWT_REFRESH_SECRET,
+  bcryptRounds: BCRYPT_ROUNDS,
+} = config;
 
 function generateTokens(userId: string) {
   const accessToken = jwt.sign({ userId }, JWT_SECRET, { expiresIn: '15m' });

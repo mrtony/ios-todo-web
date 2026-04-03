@@ -53,6 +53,15 @@ router.post('/tasks/:id/tags', validate(addTaskTagSchema), (req, res, next) => {
   }
 });
 
+router.get('/tasks/:id/tags', (req, res, next) => {
+  try {
+    const tags = tagService.getTagsForTask(req.userId!, String(req.params.id));
+    res.json(tags);
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.delete('/tasks/:id/tags/:tagId', (req, res, next) => {
   try {
     tagService.removeTagFromTask(req.userId!, String(req.params.id), String(req.params.tagId));

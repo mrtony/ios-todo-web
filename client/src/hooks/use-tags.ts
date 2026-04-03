@@ -10,6 +10,14 @@ interface Tag {
   updated_at: string;
 }
 
+export function useTaskTags(taskId: string) {
+  return useQuery<Tag[]>({
+    queryKey: ['taskTags', taskId],
+    queryFn: () => api.get(`/tasks/${taskId}/tags`).then((res) => res.data),
+    enabled: !!taskId,
+  });
+}
+
 export function useTags() {
   return useQuery<Tag[]>({
     queryKey: ['tags'],
@@ -48,7 +56,10 @@ export function useAddTagToTask() {
   return useMutation({
     mutationFn: ({ taskId, tagId }: { taskId: string; tagId: string }) =>
       api.post(`/tasks/${taskId}/tags`, { tagId }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['taskTags', variables.taskId] });
+    },
   });
 }
 
@@ -57,6 +68,9 @@ export function useRemoveTagFromTask() {
   return useMutation({
     mutationFn: ({ taskId, tagId }: { taskId: string; tagId: string }) =>
       api.delete(`/tasks/${taskId}/tags/${tagId}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['taskTags', variables.taskId] });
+    },
   });
 }

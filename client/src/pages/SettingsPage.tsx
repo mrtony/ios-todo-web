@@ -1,6 +1,7 @@
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ProfileSection from '@/components/settings/ProfileSection';
+import TagManager from '@/components/settings/TagManager';
 import ThemeToggle from '@/components/settings/ThemeToggle';
 import { Button } from '@/components/ui/button';
 
@@ -19,6 +20,7 @@ export default function SettingsPage() {
       <div className="space-y-4">
         <ProfileSection />
         <ThemeToggle />
+        <TagManager />
       </div>
     </div>
   );

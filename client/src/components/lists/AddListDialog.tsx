@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Plus } from 'lucide-react';
+import { Bookmark, Briefcase, Flag, Heart, List, Plus, ShoppingCart, Home, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -7,11 +7,22 @@ import { Label } from '@/components/ui/label';
 import { useCreateList } from '@/hooks/use-lists';
 
 const COLORS = ['#3b82f6', '#22c55e', '#f97316', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b'];
+const ICONS = [
+  { value: 'list', icon: List },
+  { value: 'cart', icon: ShoppingCart },
+  { value: 'home', icon: Home },
+  { value: 'briefcase', icon: Briefcase },
+  { value: 'heart', icon: Heart },
+  { value: 'star', icon: Star },
+  { value: 'flag', icon: Flag },
+  { value: 'bookmark', icon: Bookmark },
+] as const;
 
 export default function AddListDialog() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [color, setColor] = useState(COLORS[0]);
+  const [icon, setIcon] = useState('list');
   const createList = useCreateList();
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -21,11 +32,12 @@ export default function AddListDialog() {
     }
 
     createList.mutate(
-      { name: name.trim(), color },
+      { name: name.trim(), color, icon },
       {
         onSuccess: () => {
           setName('');
           setColor(COLORS[0]);
+          setIcon('list');
           setOpen(false);
         },
       },
@@ -68,6 +80,23 @@ export default function AddListDialog() {
                   style={{ backgroundColor: currentColor }}
                   onClick={() => setColor(currentColor)}
                 />
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>圖示</Label>
+            <div className="flex flex-wrap gap-2">
+              {ICONS.map(({ value, icon: Icon }) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-colors ${
+                    icon === value ? 'border-primary bg-primary/10' : 'border-transparent hover:bg-accent'
+                  }`}
+                  onClick={() => setIcon(value)}
+                >
+                  <Icon className="h-4 w-4" />
+                </button>
               ))}
             </div>
           </div>

@@ -19,8 +19,8 @@ router.get('/tasks/all', (req, res, next) => {
 
 router.get('/lists/:listId/tasks', (req, res, next) => {
   try {
-    const tasks = taskService.getByList(req.userId!, String(req.params.listId));
-    res.json(tasks);
+    const result = taskService.getByListWithSubtasks(req.userId!, String(req.params.listId));
+    res.json(result);
   } catch (err) {
     next(err);
   }
