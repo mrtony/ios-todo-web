@@ -34,6 +34,15 @@ export function getByList(userId: string, listId: string): Task[] {
   `).all(listId) as Task[];
 }
 
+export function getAllForUser(userId: string): Task[] {
+  const db = getDb();
+  return db.prepare(`
+    SELECT t.* FROM tasks t
+    JOIN lists l ON t.list_id = l.id
+    WHERE l.user_id = ? AND t.parent_id IS NULL
+  `).all(userId) as Task[];
+}
+
 export function create(
   userId: string,
   listId: string,

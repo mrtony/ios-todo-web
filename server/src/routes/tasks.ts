@@ -8,6 +8,15 @@ const router = Router();
 
 router.use(requireAuth);
 
+router.get('/tasks/all', (req, res, next) => {
+  try {
+    const tasks = taskService.getAllForUser(req.userId!);
+    res.json(tasks);
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get('/lists/:listId/tasks', (req, res, next) => {
   try {
     const tasks = taskService.getByList(req.userId!, String(req.params.listId));
