@@ -20,7 +20,7 @@
 | 參數佔位 | `?` | `$1, $2, $3` |
 | 時間預設值 | `datetime('now')` | `NOW()` |
 | 布林型別 | INTEGER (0/1) | INTEGER (0/1)（保持不變，避免前端改動） |
-| 交易 | `db.transaction(fn)()` | `pool.query('BEGIN')` ... `pool.query('COMMIT')` |
+| 交易 | `db.transaction(fn)()` | `withTransaction(async (client) => { ... })`（用 `pool.connect()` 確保同一連線） |
 | 回傳變更數 | `result.changes` | `result.rowCount` |
 | UNIQUE 錯誤 | `UNIQUE constraint failed` | `duplicate key value violates unique constraint` |
 | 測試 DB | in-memory SQLite | PGlite (嵌入式 PostgreSQL) |
@@ -63,6 +63,8 @@ git commit -m "chore: replace better-sqlite3 with pg and pglite for PostgreSQL m
 
 - [ ] **Step 1: 重寫 connection.ts**
 
+**重要設計決定：** `pg.Pool` 的每次 `.query()` 可能從池中取得不同連線，因此 `BEGIN` / `COMMIT` 不保證在同一連線上執行，交易會失敗。必須提供 `withTransaction` helper，用 `pool.connect()` 取得單一 client 來執行交易。
+
 ```ts
 import { Pool, type PoolClient, type QueryResult } from 'pg';
 
@@ -96,15 +98,34 @@ export async function closeDb(): Promise<void> {
   }
 }
 
-// Helper: execute multiple statements (for schema init)
-export async function execMultiple(db: DbClient, sql: string): Promise<void> {
-  // Split by semicolons, filter empty, execute sequentially
-  const statements = sql.split(';').map(s => s.trim()).filter(s => s.length > 0);
-  for (const stmt of statements) {
-    await db.query(stmt);
+/**
+ * 在單一連線上執行交易。從 pool 取得一個 client，
+ * 執行 BEGIN → callback → COMMIT，失敗時 ROLLBACK。
+ * 
+ * 用法：
+ *   await withTransaction(async (client) => {
+ *     await client.query('UPDATE ...', [params]);
+ *     await client.query('UPDATE ...', [params]);
+ *   });
+ */
+export async function withTransaction<T>(fn: (client: DbClient) => Promise<T>): Promise<T> {
+  const p = getPool();
+  const client = await p.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await fn(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
   }
 }
 ```
+
+**PGlite adapter 也需要支援 `withTransaction`：** 因為 PGlite 是單連線，adapter 的 `withTransaction` 可以直接在同一個實例上執行 BEGIN/COMMIT/ROLLBACK，或簡單地用同一個 query 方法。在 `tests/setup.ts` 中覆寫 `withTransaction` 使其使用 PGlite adapter。
 
 - [ ] **Step 2: Commit**
 
@@ -343,7 +364,7 @@ git commit -m "refactor: migrate auth.service to async PostgreSQL queries"
 - `db.prepare(sql).run(params)` → `await db.query(sql, [params])`
 - `?` → `$1, $2, ...`
 - `result.changes` → `result.rowCount`
-- `db.transaction(fn)` → 使用 `await db.query('BEGIN')` / `COMMIT` / `ROLLBACK`
+- `db.transaction(fn)` → 使用 `withTransaction(async (client) => { ... })` 確保交易在同一連線上執行
 - UNIQUE 錯誤訊息匹配改為 `duplicate key value`
 - `err.message?.includes('UNIQUE constraint failed')` → `(err as any).code === '23505'`（PostgreSQL unique violation error code）
 
@@ -420,22 +441,16 @@ export async function remove(userId: string, listId: string): Promise<void> {
 }
 
 export async function reorder(userId: string, orderedIds: string[]): Promise<void> {
-  const db = getDb();
   const now = new Date().toISOString();
 
-  await db.query('BEGIN');
-  try {
+  await withTransaction(async (client) => {
     for (let i = 0; i < orderedIds.length; i++) {
-      await db.query(
+      await client.query(
         'UPDATE lists SET sort_order = $1, updated_at = $2 WHERE id = $3 AND user_id = $4',
         [i, now, orderedIds[i], userId],
       );
     }
-    await db.query('COMMIT');
-  } catch (err) {
-    await db.query('ROLLBACK');
-    throw err;
-  }
+  });
 }
 ```
 
@@ -462,7 +477,7 @@ git commit -m "refactor: migrate list.service to async PostgreSQL queries"
 3. 動態 IN 子句：`taskIds.map(() => '?').join(',')` → `taskIds.map((_, i) => '$' + (i + 1)).join(',')`
 4. spread 參數 `...taskIds` → 直接傳 `taskIds` 陣列
 5. `result.changes` → `result.rowCount`
-6. `db.transaction()` → `BEGIN` / `COMMIT` / `ROLLBACK`
+6. `db.transaction()` → `withTransaction(async (client) => { ... })`（從 connection.ts 引入，確保交易在同一連線上）
 
 這是最大的檔案，包含 `verifyListOwnership`、`verifyTaskOwnership`、`getByList`、`getByListWithSubtasks`、`getAllForUser`、`create`、`update`、`remove`、`complete`、`uncomplete`、`reorder`、`getSubtasks`、`createSubtask`、`getNextDueDate`、`parseRecurrence`。
 
