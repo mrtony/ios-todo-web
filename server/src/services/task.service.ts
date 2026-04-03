@@ -361,34 +361,37 @@ export async function createSubtask(
     throw new AppError(400, 'INVALID_OPERATION', 'Cannot create subtask of a subtask (only one level allowed)');
   }
 
-  const db = getDb();
   const id = uuid();
   const now = new Date().toISOString();
-  const maxOrder = await db.query<{ max: number | null }>('SELECT MAX(sort_order) AS max FROM tasks WHERE parent_id = $1', [
-    parentId,
-  ]);
-  const sortOrder = (maxOrder.rows[0]?.max ?? -1) + 1;
 
-  await db.query(
-    `
-      INSERT INTO tasks (id, list_id, parent_id, title, notes, due_date, priority, flagged, sort_order, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-    `,
-    [
-      id,
-      parent.list_id,
-      parentId,
-      data.title,
-      data.notes || '',
-      data.due_date || null,
-      data.priority ?? 0,
-      data.flagged ? 1 : 0,
-      sortOrder,
-      now,
-      now,
-    ],
-  );
+  return withTransaction(async (client) => {
+    const maxOrder = await client.query<{ max: number | null }>(
+      'SELECT MAX(sort_order) AS max FROM tasks WHERE parent_id = $1',
+      [parentId],
+    );
+    const sortOrder = (maxOrder.rows[0]?.max ?? -1) + 1;
 
-  const result = await db.query<Task>('SELECT * FROM tasks WHERE id = $1', [id]);
-  return result.rows[0]!;
+    await client.query(
+      `
+        INSERT INTO tasks (id, list_id, parent_id, title, notes, due_date, priority, flagged, sort_order, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      `,
+      [
+        id,
+        parent.list_id,
+        parentId,
+        data.title,
+        data.notes || '',
+        data.due_date || null,
+        data.priority ?? 0,
+        data.flagged ? 1 : 0,
+        sortOrder,
+        now,
+        now,
+      ],
+    );
+
+    const result = await client.query<Task>('SELECT * FROM tasks WHERE id = $1', [id]);
+    return result.rows[0]!;
+  });
 }
