@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import { errorHandler } from './middleware/error-handler.js';
 
 const app = express();
 
@@ -16,5 +17,7 @@ if (process.env.NODE_ENV === 'production') {
     res.sendFile(path.join(clientDist, 'index.html'));
   });
 }
+
+app.use(errorHandler);
 
 export default app;
