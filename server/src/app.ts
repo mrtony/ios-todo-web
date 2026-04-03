@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import { errorHandler } from './middleware/error-handler.js';
 import authRoutes from './routes/auth.js';
+import listsRoutes from './routes/lists.js';
 
 const app = express();
 
@@ -12,6 +13,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/lists', listsRoutes);
 
 if (process.env.NODE_ENV === 'production') {
   const clientDist = path.join(__dirname, '../../client/dist');

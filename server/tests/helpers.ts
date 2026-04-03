@@ -5,7 +5,7 @@ import { v4 as uuid } from 'uuid';
 import app from '../src/app.js';
 import { getDb } from '../src/db/connection.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 
 export async function createTestUser(
   overrides: Partial<{ email: string; name: string; password: string }> = {},
