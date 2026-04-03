@@ -66,66 +66,105 @@ git commit -m "chore: replace better-sqlite3 with pg and pglite for PostgreSQL m
 **重要設計決定：** `pg.Pool` 的每次 `.query()` 可能從池中取得不同連線，因此 `BEGIN` / `COMMIT` 不保證在同一連線上執行，交易會失敗。必須提供 `withTransaction` helper，用 `pool.connect()` 取得單一 client 來執行交易。
 
 ```ts
-import { Pool, type PoolClient, type QueryResult } from 'pg';
+import { Pool, type QueryResult, type QueryResultRow } from 'pg';
+import { config } from '../config.js';
 
-let pool: Pool;
+let pool: Pool | DbClient | undefined;
 
 export interface DbClient {
-  query<T = any>(text: string, params?: any[]): Promise<QueryResult<T>>;
+  query<T extends QueryResultRow = QueryResultRow>(text: string, params?: any[]): Promise<QueryResult<T>>;
 }
 
 export function getPool(): Pool {
   if (!pool) {
     pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
+      connectionString: config.databaseUrl,
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
     });
   }
+
+  if (!(pool instanceof Pool)) {
+    throw new Error('Database pool is not a pg Pool instance');
+  }
+
   return pool;
 }
 
 export function getDb(): DbClient {
-  return getPool();
+  if (!pool) {
+    return getPool();
+  }
+
+  return pool;
 }
 
 export function setDb(newDb: DbClient): void {
-  (pool as any) = newDb;
+  pool = newDb;
 }
 
 export async function closeDb(): Promise<void> {
-  if (pool) {
+  if (pool instanceof Pool) {
     await pool.end();
   }
+
+  pool = undefined;
 }
 
 /**
- * 在單一連線上執行交易。從 pool 取得一個 client，
- * 執行 BEGIN → callback → COMMIT，失敗時 ROLLBACK。
- * 
- * 用法：
- *   await withTransaction(async (client) => {
- *     await client.query('UPDATE ...', [params]);
- *     await client.query('UPDATE ...', [params]);
- *   });
+ * 在單一連線上執行交易。
+ * - 若 pool 是 pg.Pool：用 pool.connect() 取得單一 client 執行。
+ * - 若 pool 是 PGlite adapter（測試環境）：直接在 adapter 上執行 BEGIN/COMMIT/ROLLBACK。
  */
 export async function withTransaction<T>(fn: (client: DbClient) => Promise<T>): Promise<T> {
-  const p = getPool();
-  const client = await p.connect();
+  if (pool instanceof Pool) {
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+      const result = await fn(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  // PGlite adapter fallback（單連線，直接執行）
+  const db = getDb();
+
   try {
-    await client.query('BEGIN');
-    const result = await fn(client);
-    await client.query('COMMIT');
+    await db.query('BEGIN');
+    const result = await fn(db);
+    await db.query('COMMIT');
     return result;
   } catch (err) {
-    await client.query('ROLLBACK');
+    await db.query('ROLLBACK');
     throw err;
-  } finally {
-    client.release();
+  }
+}
+
+// Helper: 執行多個 SQL 語句（用於 schema 初始化）
+export async function execMultiple(db: DbClient, sql: string): Promise<void> {
+  const statements = sql
+    .split(';')
+    .map((statement) => statement.trim())
+    .filter((statement) => statement.length > 0);
+
+  for (const statement of statements) {
+    await db.query(statement);
   }
 }
 ```
 
-**PGlite adapter 也需要支援 `withTransaction`：** 因為 PGlite 是單連線，adapter 的 `withTransaction` 可以直接在同一個實例上執行 BEGIN/COMMIT/ROLLBACK，或簡單地用同一個 query 方法。在 `tests/setup.ts` 中覆寫 `withTransaction` 使其使用 PGlite adapter。
+**設計重點：**
+- `pool` 變數型別為 `Pool | DbClient | undefined`，支援生產環境（pg Pool）和測試環境（PGlite adapter）
+- `DbClient` 使用 `QueryResultRow` 泛型約束，增加型別安全性
+- `withTransaction` 有兩條路徑：Pool 用 `connect()` 取得單一 client；非 Pool（測試用 PGlite）直接在同一 adapter 上操作
+- `execMultiple` 用於 schema 初始化時執行多條 SQL
+- `getPool()` 加入 `instanceof Pool` 檢查，避免測試環境誤用
 
 - [ ] **Step 2: Commit**
 
@@ -781,9 +820,34 @@ describe('Database Schema', () => {
 });
 ```
 
-- [ ] **Step 2: 檢查其他測試檔案**
+- [ ] **Step 2: 更新 subtasks.test.ts — 新增交易回歸測試**
 
-其他測試檔案（auth.test.ts, lists.test.ts, tasks.test.ts, subtasks.test.ts, tags.test.ts, recurrence.test.ts, tasks-all.test.ts）使用 supertest 透過 API 操作，**不直接呼叫 DB**，所以不需要改語法。但注意：
+`server/tests/subtasks.test.ts` 需要新增一個測試，驗證 `createSubtask()` 確實使用 `withTransaction`：
+
+```ts
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import * as dbConnection from '../src/db/connection.js';
+import * as taskService from '../src/services/task.service.js';
+
+// ... 在原有測試之後加入：
+
+it('should create subtasks inside a transaction', async () => {
+  const transactionSpy = vi.spyOn(dbConnection, 'withTransaction');
+
+  const subtask = await taskService.createSubtask(userId, parentId, {
+    title: 'Transactional Subtask',
+  });
+
+  expect(subtask.parent_id).toBe(parentId);
+  expect(transactionSpy).toHaveBeenCalledTimes(1);
+});
+```
+
+這是 PR review 後新增的回歸測試，確保 `createSubtask` 的 `MAX(sort_order)` + `INSERT` 在同一交易中執行。
+
+- [ ] **Step 3: 檢查其他測試檔案**
+
+其他測試檔案（auth.test.ts, lists.test.ts, tasks.test.ts, tags.test.ts, recurrence.test.ts, tasks-all.test.ts）使用 supertest 透過 API 操作，**不直接呼叫 DB**，所以不需要改語法。但注意：
 
 - 如果任何測試直接使用 `getDb()` 呼叫（只有 db.test.ts 和 helpers.ts 這樣做），需要更新
 - API 回傳的時間格式可能從 ISO string 變為 PostgreSQL timestamptz 格式，需注意斷言
