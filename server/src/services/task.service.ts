@@ -3,6 +3,42 @@ import { getDb } from '../db/connection.js';
 import { AppError } from '../middleware/error-handler.js';
 import type { Task } from '../types.js';
 
+interface Recurrence {
+  type: 'daily' | 'weekly' | 'monthly';
+  interval: number;
+  days?: number[];
+}
+
+function parseRecurrence(json: string | null): Recurrence | null {
+  if (!json) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(json) as Recurrence;
+  } catch {
+    return null;
+  }
+}
+
+function getNextDueDate(currentDue: string, recurrence: Recurrence): string {
+  const date = new Date(currentDue);
+
+  switch (recurrence.type) {
+    case 'daily':
+      date.setDate(date.getDate() + recurrence.interval);
+      break;
+    case 'weekly':
+      date.setDate(date.getDate() + 7 * recurrence.interval);
+      break;
+    case 'monthly':
+      date.setMonth(date.getMonth() + recurrence.interval);
+      break;
+  }
+
+  return date.toISOString();
+}
+
 function verifyListOwnership(userId: string, listId: string): void {
   const db = getDb();
   const list = db.prepare('SELECT id FROM lists WHERE id = ? AND user_id = ?').get(listId, userId);
@@ -136,10 +172,38 @@ export function remove(userId: string, taskId: string): void {
 }
 
 export function complete(userId: string, taskId: string): Task {
-  verifyTaskOwnership(userId, taskId);
+  const task = verifyTaskOwnership(userId, taskId);
   const db = getDb();
   const now = new Date().toISOString();
   db.prepare('UPDATE tasks SET completed_at = ?, updated_at = ? WHERE id = ?').run(now, now, taskId);
+
+  const recurrence = parseRecurrence(task.recurrence);
+  if (recurrence && task.due_date) {
+    const nextDueDate = getNextDueDate(task.due_date, recurrence);
+    const nextId = uuid();
+    const maxOrder = db.prepare(
+      'SELECT MAX(sort_order) as max FROM tasks WHERE list_id = ? AND parent_id IS NULL',
+    ).get(task.list_id) as { max: number | null };
+    const sortOrder = (maxOrder.max ?? -1) + 1;
+
+    db.prepare(`
+      INSERT INTO tasks (id, list_id, parent_id, title, notes, due_date, priority, flagged, recurrence, sort_order, created_at, updated_at)
+      VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      nextId,
+      task.list_id,
+      task.title,
+      task.notes,
+      nextDueDate,
+      task.priority,
+      task.flagged,
+      task.recurrence,
+      sortOrder,
+      now,
+      now,
+    );
+  }
+
   return db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as Task;
 }
 
