@@ -5,5 +5,5 @@ export const config = {
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret',
   bcryptRounds: 12,
   port: parseInt(process.env.PORT || '3000', 10),
-  dbPath: process.env.DB_PATH || './data/todo.db',
+  databaseUrl: process.env.DATABASE_URL || 'postgresql://localhost:5432/todo_dev',
 };

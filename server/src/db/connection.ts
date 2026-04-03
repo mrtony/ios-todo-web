@@ -1,9 +1,9 @@
-import { Pool, type QueryResult } from 'pg';
+import { Pool, type QueryResult, type QueryResultRow } from 'pg';
 
 let pool: Pool | DbClient | undefined;
 
 export interface DbClient {
-  query<T = any>(text: string, params?: any[]): Promise<QueryResult<T>>;
+  query<T extends QueryResultRow = QueryResultRow>(text: string, params?: any[]): Promise<QueryResult<T>>;
 }
 
 export function getPool(): Pool {
