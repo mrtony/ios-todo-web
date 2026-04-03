@@ -22,8 +22,8 @@ export async function register(email: string, password: string, name: string) {
   const db = getDb();
   const normalizedEmail = email.toLowerCase();
 
-  const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(normalizedEmail);
-  if (existing) {
+  const existing = await db.query('SELECT id FROM users WHERE email = $1', [normalizedEmail]);
+  if (existing.rows[0]) {
     throw new AppError(409, 'CONFLICT', 'Email already registered');
   }
 
@@ -31,10 +31,10 @@ export async function register(email: string, password: string, name: string) {
   const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
   const now = new Date().toISOString();
 
-  db.prepare(`
-    INSERT INTO users (id, email, password_hash, name, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).run(id, normalizedEmail, passwordHash, name, now, now);
+  await db.query(
+    'INSERT INTO users (id, email, password_hash, name, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)',
+    [id, normalizedEmail, passwordHash, name, now, now],
+  );
 
   const tokens = generateTokens(id);
   return { user: { id, email: normalizedEmail, name }, ...tokens };
@@ -44,7 +44,8 @@ export async function login(email: string, password: string) {
   const db = getDb();
   const normalizedEmail = email.toLowerCase();
 
-  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(normalizedEmail) as User | undefined;
+  const result = await db.query<User>('SELECT * FROM users WHERE email = $1', [normalizedEmail]);
+  const user = result.rows[0];
   if (!user) {
     throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
   }
@@ -55,19 +56,21 @@ export async function login(email: string, password: string) {
   }
 
   const now = new Date().toISOString();
-  db.prepare('UPDATE users SET last_login_at = ?, updated_at = ? WHERE id = ?').run(now, now, user.id);
+  await db.query('UPDATE users SET last_login_at = $1, updated_at = $2 WHERE id = $3', [now, now, user.id]);
 
   const tokens = generateTokens(user.id);
   return { user: { id: user.id, email: user.email, name: user.name }, ...tokens };
 }
 
-export function refresh(refreshToken: string) {
+export async function refresh(refreshToken: string) {
   try {
     const payload = jwt.verify(refreshToken, JWT_REFRESH_SECRET) as { userId: string };
     const db = getDb();
-    const user = db.prepare('SELECT id, email, name FROM users WHERE id = ?').get(payload.userId) as
-      | Pick<User, 'id' | 'email' | 'name'>
-      | undefined;
+    const result = await db.query<Pick<User, 'id' | 'email' | 'name'>>(
+      'SELECT id, email, name FROM users WHERE id = $1',
+      [payload.userId],
+    );
+    const user = result.rows[0];
 
     if (!user) {
       throw new AppError(401, 'INVALID_TOKEN', 'User not found');
@@ -84,11 +87,13 @@ export function refresh(refreshToken: string) {
   }
 }
 
-export function getMe(userId: string) {
+export async function getMe(userId: string) {
   const db = getDb();
-  const user = db.prepare('SELECT id, email, name, created_at FROM users WHERE id = ?').get(userId) as
-    | Pick<User, 'id' | 'email' | 'name' | 'created_at'>
-    | undefined;
+  const result = await db.query<Pick<User, 'id' | 'email' | 'name' | 'created_at'>>(
+    'SELECT id, email, name, created_at FROM users WHERE id = $1',
+    [userId],
+  );
+  const user = result.rows[0];
 
   if (!user) {
     throw new AppError(404, 'NOT_FOUND', 'User not found');
