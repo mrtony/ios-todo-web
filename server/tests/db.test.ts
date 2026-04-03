@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { getDb } from '../src/db/connection.js';
 
 describe('Database Schema', () => {
-  it('should create all tables', () => {
+  it('should create all tables', async () => {
     const db = getDb();
-    const tables = db.prepare(`
-      SELECT name FROM sqlite_master WHERE type='table' ORDER BY name
-    `).all() as { name: string }[];
+    const result = await db.query(`
+      SELECT table_name FROM information_schema.tables
+      WHERE table_schema = 'public' ORDER BY table_name
+    `);
 
-    const tableNames = tables.map((table) => table.name);
+    const tableNames = result.rows.map((row: any) => row.table_name);
     expect(tableNames).toContain('users');
     expect(tableNames).toContain('lists');
     expect(tableNames).toContain('tasks');
@@ -16,57 +17,56 @@ describe('Database Schema', () => {
     expect(tableNames).toContain('task_tags');
   });
 
-  it('should enforce foreign keys', () => {
+  it('should enforce foreign keys', async () => {
     const db = getDb();
-    expect(() => {
-      db.prepare(`
-        INSERT INTO lists (id, user_id, name) VALUES ('l1', 'nonexistent', 'Test')
-      `).run();
-    }).toThrow();
+    await expect(
+      db.query("INSERT INTO lists (id, user_id, name) VALUES ('l1', 'nonexistent', 'Test')"),
+    ).rejects.toThrow();
   });
 
-  it('should enforce priority check constraint', () => {
+  it('should enforce priority check constraint', async () => {
     const db = getDb();
-    const userId = 'u1';
-    const listId = 'l1';
+    await db.query('INSERT INTO users (id, email, password_hash, name) VALUES ($1, $2, $3, $4)', [
+      'u1',
+      'a@b.com',
+      'hash',
+      'A',
+    ]);
+    await db.query('INSERT INTO lists (id, user_id, name) VALUES ($1, $2, $3)', ['l1', 'u1', 'My List']);
 
-    db.prepare(`INSERT INTO users (id, email, password_hash, name) VALUES (?, ?, ?, ?)`)
-      .run(userId, 'a@b.com', 'hash', 'A');
-    db.prepare(`INSERT INTO lists (id, user_id, name) VALUES (?, ?, ?)`)
-      .run(listId, userId, 'My List');
-
-    expect(() => {
-      db.prepare(`
-        INSERT INTO tasks (id, list_id, title, priority) VALUES ('t1', ?, 'Task', 5)
-      `).run(listId);
-    }).toThrow();
+    await expect(
+      db.query('INSERT INTO tasks (id, list_id, title, priority) VALUES ($1, $2, $3, $4)', ['t1', 'l1', 'Task', 5]),
+    ).rejects.toThrow();
   });
 
-  it('should cascade delete lists when user is deleted', () => {
+  it('should cascade delete lists when user is deleted', async () => {
     const db = getDb();
+    await db.query('INSERT INTO users (id, email, password_hash, name) VALUES ($1, $2, $3, $4)', [
+      'u1',
+      'a@b.com',
+      'hash',
+      'A',
+    ]);
+    await db.query('INSERT INTO lists (id, user_id, name) VALUES ($1, $2, $3)', ['l1', 'u1', 'My List']);
+    await db.query('DELETE FROM users WHERE id = $1', ['u1']);
 
-    db.prepare(`INSERT INTO users (id, email, password_hash, name) VALUES (?, ?, ?, ?)`)
-      .run('u1', 'a@b.com', 'hash', 'A');
-    db.prepare(`INSERT INTO lists (id, user_id, name) VALUES (?, ?, ?)`)
-      .run('l1', 'u1', 'My List');
-    db.prepare(`DELETE FROM users WHERE id = ?`).run('u1');
-
-    const list = db.prepare(`SELECT * FROM lists WHERE id = ?`).get('l1');
-    expect(list).toBeUndefined();
+    const result = await db.query('SELECT * FROM lists WHERE id = $1', ['l1']);
+    expect(result.rows[0]).toBeUndefined();
   });
 
-  it('should cascade delete tasks when list is deleted', () => {
+  it('should cascade delete tasks when list is deleted', async () => {
     const db = getDb();
+    await db.query('INSERT INTO users (id, email, password_hash, name) VALUES ($1, $2, $3, $4)', [
+      'u1',
+      'a@b.com',
+      'hash',
+      'A',
+    ]);
+    await db.query('INSERT INTO lists (id, user_id, name) VALUES ($1, $2, $3)', ['l1', 'u1', 'My List']);
+    await db.query('INSERT INTO tasks (id, list_id, title) VALUES ($1, $2, $3)', ['t1', 'l1', 'Task 1']);
+    await db.query('DELETE FROM lists WHERE id = $1', ['l1']);
 
-    db.prepare(`INSERT INTO users (id, email, password_hash, name) VALUES (?, ?, ?, ?)`)
-      .run('u1', 'a@b.com', 'hash', 'A');
-    db.prepare(`INSERT INTO lists (id, user_id, name) VALUES (?, ?, ?)`)
-      .run('l1', 'u1', 'My List');
-    db.prepare(`INSERT INTO tasks (id, list_id, title) VALUES (?, ?, ?)`)
-      .run('t1', 'l1', 'Task 1');
-    db.prepare(`DELETE FROM lists WHERE id = ?`).run('l1');
-
-    const task = db.prepare(`SELECT * FROM tasks WHERE id = ?`).get('t1');
-    expect(task).toBeUndefined();
+    const result = await db.query('SELECT * FROM tasks WHERE id = $1', ['t1']);
+    expect(result.rows[0]).toBeUndefined();
   });
 });
