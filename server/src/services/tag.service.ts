@@ -3,111 +3,139 @@ import { getDb } from '../db/connection.js';
 import { AppError } from '../middleware/error-handler.js';
 import type { Tag } from '../types.js';
 
-export function getAll(userId: string): Tag[] {
+export async function getAll(userId: string): Promise<Tag[]> {
   const db = getDb();
-  return db.prepare('SELECT * FROM tags WHERE user_id = ? ORDER BY name ASC').all(userId) as Tag[];
+  const result = await db.query<Tag>('SELECT * FROM tags WHERE user_id = $1 ORDER BY name ASC', [userId]);
+  return result.rows;
 }
 
-export function create(userId: string, data: { name: string; color?: string }): Tag {
+export async function create(userId: string, data: { name: string; color?: string }): Promise<Tag> {
   const db = getDb();
   const id = uuid();
   const now = new Date().toISOString();
 
   try {
-    db.prepare(`
-      INSERT INTO tags (id, user_id, name, color, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(id, userId, data.name, data.color || '#6b7280', now, now);
+    await db.query(
+      'INSERT INTO tags (id, user_id, name, color, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)',
+      [id, userId, data.name, data.color || '#6b7280', now, now],
+    );
   } catch (err: any) {
-    if (err.message?.includes('UNIQUE constraint failed')) {
+    if (err.code === '23505') {
       throw new AppError(409, 'CONFLICT', 'A tag with this name already exists');
     }
+
     throw err;
   }
 
-  return db.prepare('SELECT * FROM tags WHERE id = ?').get(id) as Tag;
+  const result = await db.query<Tag>('SELECT * FROM tags WHERE id = $1', [id]);
+  return result.rows[0]!;
 }
 
-export function update(userId: string, tagId: string, data: { name?: string; color?: string }): Tag {
+export async function update(
+  userId: string,
+  tagId: string,
+  data: { name?: string; color?: string },
+): Promise<Tag> {
   const db = getDb();
-  const existing = db.prepare('SELECT * FROM tags WHERE id = ? AND user_id = ?').get(tagId, userId) as Tag | undefined;
+  const existingResult = await db.query<Tag>('SELECT * FROM tags WHERE id = $1 AND user_id = $2', [tagId, userId]);
+  const existing = existingResult.rows[0];
+
   if (!existing) {
     throw new AppError(404, 'NOT_FOUND', 'Tag not found');
   }
 
   const now = new Date().toISOString();
+
   try {
-    db.prepare('UPDATE tags SET name = ?, color = ?, updated_at = ? WHERE id = ?').run(
+    await db.query('UPDATE tags SET name = $1, color = $2, updated_at = $3 WHERE id = $4', [
       data.name ?? existing.name,
       data.color ?? existing.color,
       now,
       tagId,
-    );
+    ]);
   } catch (err: any) {
-    if (err.message?.includes('UNIQUE constraint failed')) {
+    if (err.code === '23505') {
       throw new AppError(409, 'CONFLICT', 'A tag with this name already exists');
     }
+
     throw err;
   }
 
-  return db.prepare('SELECT * FROM tags WHERE id = ?').get(tagId) as Tag;
+  const result = await db.query<Tag>('SELECT * FROM tags WHERE id = $1', [tagId]);
+  return result.rows[0]!;
 }
 
-export function remove(userId: string, tagId: string): void {
+export async function remove(userId: string, tagId: string): Promise<void> {
   const db = getDb();
-  const result = db.prepare('DELETE FROM tags WHERE id = ? AND user_id = ?').run(tagId, userId);
-  if (result.changes === 0) {
+  const result = await db.query('DELETE FROM tags WHERE id = $1 AND user_id = $2', [tagId, userId]);
+
+  if (result.rowCount === 0) {
     throw new AppError(404, 'NOT_FOUND', 'Tag not found');
   }
 }
 
-export function addTagToTask(userId: string, taskId: string, tagId: string): void {
+export async function addTagToTask(userId: string, taskId: string, tagId: string): Promise<void> {
   const db = getDb();
 
-  const task = db.prepare(`
-    SELECT t.id FROM tasks t JOIN lists l ON t.list_id = l.id WHERE t.id = ? AND l.user_id = ?
-  `).get(taskId, userId);
-  if (!task) {
+  const task = await db.query(
+    `
+      SELECT t.id FROM tasks t
+      JOIN lists l ON t.list_id = l.id
+      WHERE t.id = $1 AND l.user_id = $2
+    `,
+    [taskId, userId],
+  );
+  if (!task.rows[0]) {
     throw new AppError(404, 'NOT_FOUND', 'Task not found');
   }
 
-  const tag = db.prepare('SELECT id FROM tags WHERE id = ? AND user_id = ?').get(tagId, userId);
-  if (!tag) {
+  const tag = await db.query('SELECT id FROM tags WHERE id = $1 AND user_id = $2', [tagId, userId]);
+  if (!tag.rows[0]) {
     throw new AppError(404, 'NOT_FOUND', 'Tag not found');
   }
 
   try {
-    db.prepare('INSERT INTO task_tags (task_id, tag_id) VALUES (?, ?)').run(taskId, tagId);
+    await db.query('INSERT INTO task_tags (task_id, tag_id) VALUES ($1, $2)', [taskId, tagId]);
   } catch (err: any) {
-    if (err.message?.includes('UNIQUE constraint') || err.message?.includes('PRIMARY KEY')) {
+    if (err.code === '23505') {
       throw new AppError(409, 'CONFLICT', 'Tag already assigned to this task');
     }
+
     throw err;
   }
 }
 
-export function removeTagFromTask(userId: string, taskId: string, tagId: string): void {
+export async function removeTagFromTask(userId: string, taskId: string, tagId: string): Promise<void> {
   const db = getDb();
 
-  const task = db.prepare(`
-    SELECT t.id FROM tasks t JOIN lists l ON t.list_id = l.id WHERE t.id = ? AND l.user_id = ?
-  `).get(taskId, userId);
-  if (!task) {
+  const task = await db.query(
+    `
+      SELECT t.id FROM tasks t
+      JOIN lists l ON t.list_id = l.id
+      WHERE t.id = $1 AND l.user_id = $2
+    `,
+    [taskId, userId],
+  );
+  if (!task.rows[0]) {
     throw new AppError(404, 'NOT_FOUND', 'Task not found');
   }
 
-  const result = db.prepare('DELETE FROM task_tags WHERE task_id = ? AND tag_id = ?').run(taskId, tagId);
-  if (result.changes === 0) {
+  const result = await db.query('DELETE FROM task_tags WHERE task_id = $1 AND tag_id = $2', [taskId, tagId]);
+  if (result.rowCount === 0) {
     throw new AppError(404, 'NOT_FOUND', 'Tag not assigned to this task');
   }
 }
 
-export function getTagsForTask(userId: string, taskId: string): Tag[] {
+export async function getTagsForTask(userId: string, taskId: string): Promise<Tag[]> {
   const db = getDb();
-  return db.prepare(`
-    SELECT t.* FROM tags t
-    JOIN task_tags tt ON t.id = tt.tag_id
-    WHERE tt.task_id = ? AND t.user_id = ?
-    ORDER BY t.name ASC
-  `).all(taskId, userId) as Tag[];
+  const result = await db.query<Tag>(
+    `
+      SELECT t.* FROM tags t
+      JOIN task_tags tt ON t.id = tt.tag_id
+      WHERE tt.task_id = $1 AND t.user_id = $2
+      ORDER BY t.name ASC
+    `,
+    [taskId, userId],
+  );
+  return result.rows;
 }
