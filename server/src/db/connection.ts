@@ -41,6 +41,36 @@ export async function closeDb(): Promise<void> {
   pool = undefined;
 }
 
+export async function withTransaction<T>(fn: (client: DbClient) => Promise<T>): Promise<T> {
+  if (pool instanceof Pool) {
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+      const result = await fn(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  const db = getDb();
+
+  try {
+    await db.query('BEGIN');
+    const result = await fn(db);
+    await db.query('COMMIT');
+    return result;
+  } catch (err) {
+    await db.query('ROLLBACK');
+    throw err;
+  }
+}
+
 export async function execMultiple(db: DbClient, sql: string): Promise<void> {
   const statements = sql
     .split(';')
