@@ -1,12 +1,16 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import * as dbConnection from '../src/db/connection.js';
+import * as taskService from '../src/services/task.service.js';
 import { authRequest, createTestUser, generateToken } from './helpers.js';
 
 let token: string;
 let listId: string;
 let parentId: string;
+let userId: string;
 
 beforeEach(async () => {
   const user = await createTestUser();
+  userId = user.id;
   token = generateToken(user.id);
   const listRes = await authRequest('post', '/api/lists', token).send({ name: 'Test List' });
   listId = listRes.body.id;
@@ -34,6 +38,17 @@ describe('POST /api/tasks/:parentId/subtasks', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('INVALID_OPERATION');
+  });
+
+  it('should create subtasks inside a transaction', async () => {
+    const transactionSpy = vi.spyOn(dbConnection, 'withTransaction');
+
+    const subtask = await taskService.createSubtask(userId, parentId, {
+      title: 'Transactional Subtask',
+    });
+
+    expect(subtask.parent_id).toBe(parentId);
+    expect(transactionSpy).toHaveBeenCalledTimes(1);
   });
 });
 

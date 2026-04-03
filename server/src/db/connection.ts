@@ -1,35 +1,84 @@
-import Database from 'better-sqlite3';
-import path from 'path';
+import { Pool, type QueryResult, type QueryResultRow } from 'pg';
+import { config } from '../config.js';
 
-let db: Database.Database | undefined;
+let pool: Pool | DbClient | undefined;
 
-export function getDb(): Database.Database {
-  if (!db) {
-    const dbPath = process.env.DB_PATH || path.join(__dirname, '../../data/todo.db');
-    db = new Database(dbPath);
-    db.pragma('journal_mode = WAL');
-    db.pragma('foreign_keys = ON');
+export interface DbClient {
+  query<T extends QueryResultRow = QueryResultRow>(text: string, params?: any[]): Promise<QueryResult<T>>;
+}
+
+export function getPool(): Pool {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: config.databaseUrl,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
+    });
   }
 
-  return db;
-}
-
-export function createTestDb(): Database.Database {
-  const testDb = new Database(':memory:');
-  testDb.pragma('foreign_keys = ON');
-  return testDb;
-}
-
-export function setDb(newDb: Database.Database): void {
-  if (db && db !== newDb) {
-    db.close();
+  if (!(pool instanceof Pool)) {
+    throw new Error('Database pool is not a pg Pool instance');
   }
-  db = newDb;
+
+  return pool;
 }
 
-export function closeDb(): void {
-  if (db) {
-    db.close();
-    db = undefined;
+export function getDb(): DbClient {
+  if (!pool) {
+    return getPool();
+  }
+
+  return pool;
+}
+
+export function setDb(newDb: DbClient): void {
+  pool = newDb;
+}
+
+export async function closeDb(): Promise<void> {
+  if (pool instanceof Pool) {
+    await pool.end();
+  }
+
+  pool = undefined;
+}
+
+export async function withTransaction<T>(fn: (client: DbClient) => Promise<T>): Promise<T> {
+  if (pool instanceof Pool) {
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+      const result = await fn(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  const db = getDb();
+
+  try {
+    await db.query('BEGIN');
+    const result = await fn(db);
+    await db.query('COMMIT');
+    return result;
+  } catch (err) {
+    await db.query('ROLLBACK');
+    throw err;
+  }
+}
+
+export async function execMultiple(db: DbClient, sql: string): Promise<void> {
+  const statements = sql
+    .split(';')
+    .map((statement) => statement.trim())
+    .filter((statement) => statement.length > 0);
+
+  for (const statement of statements) {
+    await db.query(statement);
   }
 }

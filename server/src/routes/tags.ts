@@ -8,63 +8,63 @@ const router = Router();
 
 router.use(requireAuth);
 
-router.get('/tags', (req, res, next) => {
+router.get('/tags', async (req, res, next) => {
   try {
-    const tags = tagService.getAll(req.userId!);
+    const tags = await tagService.getAll(req.userId!);
     res.json(tags);
   } catch (err) {
     next(err);
   }
 });
 
-router.post('/tags', validate(createTagSchema), (req, res, next) => {
+router.post('/tags', validate(createTagSchema), async (req, res, next) => {
   try {
-    const tag = tagService.create(req.userId!, req.body);
+    const tag = await tagService.create(req.userId!, req.body);
     res.status(201).json(tag);
   } catch (err) {
     next(err);
   }
 });
 
-router.patch('/tags/:id', validate(updateTagSchema), (req, res, next) => {
+router.patch('/tags/:id', validate(updateTagSchema), async (req, res, next) => {
   try {
-    const tag = tagService.update(req.userId!, String(req.params.id), req.body);
+    const tag = await tagService.update(req.userId!, String(req.params.id), req.body);
     res.json(tag);
   } catch (err) {
     next(err);
   }
 });
 
-router.delete('/tags/:id', (req, res, next) => {
+router.delete('/tags/:id', async (req, res, next) => {
   try {
-    tagService.remove(req.userId!, String(req.params.id));
+    await tagService.remove(req.userId!, String(req.params.id));
     res.status(204).send();
   } catch (err) {
     next(err);
   }
 });
 
-router.post('/tasks/:id/tags', validate(addTaskTagSchema), (req, res, next) => {
+router.post('/tasks/:id/tags', validate(addTaskTagSchema), async (req, res, next) => {
   try {
-    tagService.addTagToTask(req.userId!, String(req.params.id), req.body.tagId);
+    await tagService.addTagToTask(req.userId!, String(req.params.id), req.body.tagId);
     res.status(201).json({ success: true });
   } catch (err) {
     next(err);
   }
 });
 
-router.get('/tasks/:id/tags', (req, res, next) => {
+router.get('/tasks/:id/tags', async (req, res, next) => {
   try {
-    const tags = tagService.getTagsForTask(req.userId!, String(req.params.id));
+    const tags = await tagService.getTagsForTask(req.userId!, String(req.params.id));
     res.json(tags);
   } catch (err) {
     next(err);
   }
 });
 
-router.delete('/tasks/:id/tags/:tagId', (req, res, next) => {
+router.delete('/tasks/:id/tags/:tagId', async (req, res, next) => {
   try {
-    tagService.removeTagFromTask(req.userId!, String(req.params.id), String(req.params.tagId));
+    await tagService.removeTagFromTask(req.userId!, String(req.params.id), String(req.params.tagId));
     res.status(204).send();
   } catch (err) {
     next(err);

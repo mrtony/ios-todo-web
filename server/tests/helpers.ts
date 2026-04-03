@@ -17,10 +17,10 @@ export async function createTestUser(
   const password = overrides.password || 'password123';
   const passwordHash = await bcrypt.hash(password, 4);
 
-  db.prepare(`
-    INSERT INTO users (id, email, password_hash, name)
-    VALUES (?, ?, ?, ?)
-  `).run(id, email.toLowerCase(), passwordHash, name);
+  await db.query(
+    'INSERT INTO users (id, email, password_hash, name) VALUES ($1, $2, $3, $4)',
+    [id, email.toLowerCase(), passwordHash, name],
+  );
 
   return { id, email: email.toLowerCase(), name, password };
 }
