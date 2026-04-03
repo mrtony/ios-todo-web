@@ -2,10 +2,16 @@ import type { ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAuth } from '@/context/auth-context';
+import { useTaskNotifications } from '@/hooks/use-notifications';
 import HomePage from '@/pages/HomePage';
 import ListDetailPage from '@/pages/ListDetailPage';
 import LoginPage from '@/pages/LoginPage';
 import SettingsPage from '@/pages/SettingsPage';
+
+function NotificationProvider({ children }: { children: ReactNode }) {
+  useTaskNotifications();
+  return <>{children}</>;
+}
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -29,7 +35,9 @@ export default function App() {
         <Route
           element={(
             <ProtectedRoute>
-              <MainLayout />
+              <NotificationProvider>
+                <MainLayout />
+              </NotificationProvider>
             </ProtectedRoute>
           )}
         >
