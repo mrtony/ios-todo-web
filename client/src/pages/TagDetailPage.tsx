@@ -8,10 +8,11 @@ import { useTagsWithCounts, useTasksByTag } from '@/hooks/use-tags';
 export default function TagDetailPage() {
   const { id: tagId } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: tags = [] } = useTagsWithCounts();
-  const { data: tasks = [], isLoading } = useTasksByTag(tagId!);
+  const { data: tags = [], isLoading: isTagsLoading } = useTagsWithCounts();
+  const { data: tasks = [], isLoading: isTasksLoading } = useTasksByTag(tagId!);
   const [showCompleted, setShowCompleted] = useState(false);
 
+  const isLoading = isTagsLoading || isTasksLoading;
   const tag = tags.find((entry) => entry.id === tagId);
 
   if (!tag && !isLoading) {
