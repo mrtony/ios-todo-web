@@ -12,6 +12,7 @@ interface TaskItemProps {
   tags?: { name: string; color: string }[];
   onToggleComplete: (id: string) => void;
   onClick: (id: string) => void;
+  hideCheckbox?: boolean;
 }
 
 const priorityLabels: Record<number, { label: string; className: string }> = {
@@ -31,6 +32,7 @@ export default function TaskItem({
   tags,
   onToggleComplete,
   onClick,
+  hideCheckbox,
 }: TaskItemProps) {
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -44,18 +46,20 @@ export default function TaskItem({
       }`}
       onClick={() => onClick(id)}
     >
-      <button
-        className={`mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
-          completed ? 'border-transparent text-white' : 'border-current'
-        }`}
-        style={{ borderColor: completed ? undefined : color, backgroundColor: completed ? color : 'transparent' }}
-        onClick={(event) => {
-          event.stopPropagation();
-          onToggleComplete(id);
-        }}
-      >
-        {completed && <Check className="h-3.5 w-3.5" />}
-      </button>
+      {!hideCheckbox && (
+        <button
+          className={`mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+            completed ? 'border-transparent text-white' : 'border-current'
+          }`}
+          style={{ borderColor: completed ? undefined : color, backgroundColor: completed ? color : 'transparent' }}
+          onClick={(event) => {
+            event.stopPropagation();
+            onToggleComplete(id);
+          }}
+        >
+          {completed && <Check className="h-3.5 w-3.5" />}
+        </button>
+      )}
       <div className="min-w-0 flex-1">
         <div className={`text-sm ${completed ? 'line-through text-muted-foreground' : ''}`}>
           {title}

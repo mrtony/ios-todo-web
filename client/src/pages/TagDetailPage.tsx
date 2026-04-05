@@ -53,6 +53,7 @@ export default function TagDetailPage() {
                   color={tag?.color || '#6b7280'}
                   onToggleComplete={() => navigate(`/lists/${task.list_id}`)}
                   onClick={() => navigate(`/lists/${task.list_id}`)}
+                  hideCheckbox
                 />
               ))}
             </div>
@@ -80,6 +81,7 @@ export default function TagDetailPage() {
                       color={tag?.color || '#6b7280'}
                       onToggleComplete={() => navigate(`/lists/${task.list_id}`)}
                       onClick={() => navigate(`/lists/${task.list_id}`)}
+                      hideCheckbox
                     />
                   ))}
                 </div>
