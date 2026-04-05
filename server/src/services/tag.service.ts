@@ -144,7 +144,7 @@ export async function getWithCounts(
   userId: string,
 ): Promise<{ id: string; name: string; color: string; task_count: number }[]> {
   const db = getDb();
-  const result = await db.query(
+  const result = await db.query<{ id: string; name: string; color: string; task_count: number }>(
     `SELECT t.id, t.name, t.color,
       COUNT(CASE WHEN tk.completed_at IS NULL AND tk.id IS NOT NULL THEN 1 END)::int AS task_count
     FROM tags t
