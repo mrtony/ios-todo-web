@@ -286,6 +286,17 @@ Claude Code 審查 → 發現問題 → 生成修復計畫 → Codex 修復 → 
 | 7 | 遷移審查 | 發現交易安全問題 + 3 個 PR review 問題 → Codex 修正 |
 | 8 | 部署 | Render + Neon 上線 |
 
+### 實際案例
+
+1. codex: 使用 superpowers:executing-plans 技能，按照 docs/superpowers/plans/2026-04-04-tag-list-homepage.md 逐步執行。
+2. claude code: codex Implementation complete. 幫我審查它的程式碼, 有任何需要改善的部份, 請提出改善計劃.
+3. codex: 使用 superpowers:executing-plans 技能，按照 docs/superpowers/plans/2026-04-05-tag-list-improvements.md 逐步執行。在 feat/tag-list-homepage
+  分支上繼續開發。
+4. claude code: codex Implementation complete. 幫我審查它這次修改的程式碼, 有任何需要改善的部份, 請提出改善計劃.
+5. codex: Push and create a Pull Request. PR 內容請用繁體中文顯示。
+6. claude code: codex已建立 PR: 'https://github.com/mrtony/ios-todo-web/pull/4', , 分支 feat/tag-list-homepage 已推到遠端，PR 標題與內容都已改為繁體中文。依 finishing-a-development-branch 的 Option 2，worktree 會保留在 /home/
+  tony/cc_labs/eval_spec_design/.worktrees/feat-tag-list-homepage。 請合併到主線並完成後序收尾工作。
+
 ## 設計文件
 
 - **設計規格**：[`docs/superpowers/specs/2026-04-03-todo-webapp-design.md`](docs/superpowers/specs/2026-04-03-todo-webapp-design.md)
