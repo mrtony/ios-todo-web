@@ -139,6 +139,8 @@ export function useCompleteTask(listId: string) {
       queryClient.invalidateQueries({ queryKey: ['tasks', listId] });
       queryClient.invalidateQueries({ queryKey: ['lists'] });
       queryClient.invalidateQueries({ queryKey: ['tasks', 'all'] });
+      queryClient.invalidateQueries({ queryKey: ['tags-with-counts'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks-by-tag'] });
     },
   });
 }
@@ -181,6 +183,8 @@ export function useUncompleteTask(listId: string) {
       queryClient.invalidateQueries({ queryKey: ['tasks', listId] });
       queryClient.invalidateQueries({ queryKey: ['lists'] });
       queryClient.invalidateQueries({ queryKey: ['tasks', 'all'] });
+      queryClient.invalidateQueries({ queryKey: ['tags-with-counts'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks-by-tag'] });
     },
   });
 }
