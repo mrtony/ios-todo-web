@@ -10,6 +10,24 @@ interface Tag {
   updated_at: string;
 }
 
+interface TagWithCount {
+  id: string;
+  name: string;
+  color: string;
+  task_count: number;
+}
+
+interface Task {
+  id: string;
+  list_id: string;
+  title: string;
+  completed_at: string | null;
+  priority: number;
+  due_date: string | null;
+  flagged: number;
+  sort_order: number;
+}
+
 export function useTaskTags(taskId: string) {
   return useQuery<Tag[]>({
     queryKey: ['taskTags', taskId],
@@ -22,6 +40,21 @@ export function useTags() {
   return useQuery<Tag[]>({
     queryKey: ['tags'],
     queryFn: () => api.get('/tags').then((res) => res.data),
+  });
+}
+
+export function useTagsWithCounts() {
+  return useQuery<TagWithCount[]>({
+    queryKey: ['tags-with-counts'],
+    queryFn: () => api.get('/tags/with-counts').then((res) => res.data),
+  });
+}
+
+export function useTasksByTag(tagId: string) {
+  return useQuery<Task[]>({
+    queryKey: ['tasks-by-tag', tagId],
+    queryFn: () => api.get(`/tags/${tagId}/tasks`).then((res) => res.data),
+    enabled: !!tagId,
   });
 }
 
@@ -47,7 +80,10 @@ export function useDeleteTag() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.delete(`/tags/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tags'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tags'] });
+      queryClient.invalidateQueries({ queryKey: ['tags-with-counts'] });
+    },
   });
 }
 
@@ -59,6 +95,8 @@ export function useAddTagToTask() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['taskTags', variables.taskId] });
+      queryClient.invalidateQueries({ queryKey: ['tags-with-counts'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks-by-tag', variables.tagId] });
     },
   });
 }
@@ -71,6 +109,8 @@ export function useRemoveTagFromTask() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['taskTags', variables.taskId] });
+      queryClient.invalidateQueries({ queryKey: ['tags-with-counts'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks-by-tag', variables.tagId] });
     },
   });
 }

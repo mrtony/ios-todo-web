@@ -1,7 +1,7 @@
 import { v4 as uuid } from 'uuid';
 import { getDb } from '../db/connection.js';
 import { AppError } from '../middleware/error-handler.js';
-import type { Tag } from '../types.js';
+import type { Tag, Task } from '../types.js';
 
 export async function getAll(userId: string): Promise<Tag[]> {
   const db = getDb();
@@ -136,6 +136,42 @@ export async function getTagsForTask(userId: string, taskId: string): Promise<Ta
       ORDER BY t.name ASC
     `,
     [taskId, userId],
+  );
+  return result.rows;
+}
+
+export async function getWithCounts(
+  userId: string,
+): Promise<{ id: string; name: string; color: string; task_count: number }[]> {
+  const db = getDb();
+  const result = await db.query(
+    `SELECT t.id, t.name, t.color,
+      COUNT(CASE WHEN tk.completed_at IS NULL AND tk.id IS NOT NULL THEN 1 END)::int AS task_count
+    FROM tags t
+    LEFT JOIN task_tags tt ON t.id = tt.tag_id
+    LEFT JOIN tasks tk ON tt.task_id = tk.id
+    WHERE t.user_id = $1
+    GROUP BY t.id, t.name, t.color
+    ORDER BY t.name ASC`,
+    [userId],
+  );
+  return result.rows;
+}
+
+export async function getTasksByTag(userId: string, tagId: string): Promise<Task[]> {
+  const db = getDb();
+
+  const tagResult = await db.query('SELECT id FROM tags WHERE id = $1 AND user_id = $2', [tagId, userId]);
+  if (!tagResult.rows[0]) {
+    throw new AppError(404, 'NOT_FOUND', 'Tag not found');
+  }
+
+  const result = await db.query<Task>(
+    `SELECT tk.* FROM tasks tk
+    JOIN task_tags tt ON tk.id = tt.task_id
+    WHERE tt.tag_id = $1
+    ORDER BY tk.completed_at NULLS FIRST, tk.sort_order ASC`,
+    [tagId],
   );
   return result.rows;
 }
