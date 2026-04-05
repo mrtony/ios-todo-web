@@ -8,6 +8,7 @@ import ListDetailPage from '@/pages/ListDetailPage';
 import LoginPage from '@/pages/LoginPage';
 import SettingsPage from '@/pages/SettingsPage';
 import SmartListPage from '@/pages/SmartListPage';
+import TagDetailPage from '@/pages/TagDetailPage';
 
 function NotificationProvider({ children }: { children: ReactNode }) {
   useTaskNotifications();
@@ -45,6 +46,7 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/lists/:id" element={<ListDetailPage />} />
           <Route path="/smart/:type" element={<SmartListPage />} />
+          <Route path="/tags/:id" element={<TagDetailPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
       </Routes>

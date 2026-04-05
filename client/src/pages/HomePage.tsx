@@ -1,6 +1,7 @@
 import AddListDialog from '@/components/lists/AddListDialog';
 import ListGroup from '@/components/lists/ListGroup';
 import SmartListGrid from '@/components/lists/SmartListGrid';
+import TagGroup from '@/components/tags/TagGroup';
 import { useSmartListCounts } from '@/hooks/use-all-tasks';
 import { useLists } from '@/hooks/use-lists';
 
@@ -21,6 +22,7 @@ export default function HomePage() {
         flaggedCount={flaggedCount}
       />
       <ListGroup lists={lists} taskCounts={taskCountsByList} />
+      <TagGroup />
       <AddListDialog />
     </div>
   );
