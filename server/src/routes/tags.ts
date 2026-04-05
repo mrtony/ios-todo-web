@@ -17,6 +17,24 @@ router.get('/tags', async (req, res, next) => {
   }
 });
 
+router.get('/tags/with-counts', async (req, res, next) => {
+  try {
+    const tags = await tagService.getWithCounts(req.userId!);
+    res.json(tags);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/tags/:id/tasks', async (req, res, next) => {
+  try {
+    const tasks = await tagService.getTasksByTag(req.userId!, String(req.params.id));
+    res.json(tasks);
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post('/tags', validate(createTagSchema), async (req, res, next) => {
   try {
     const tag = await tagService.create(req.userId!, req.body);
